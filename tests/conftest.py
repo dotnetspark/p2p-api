@@ -6,7 +6,7 @@ from collections.abc import Iterator
 import pytest
 from fastapi.testclient import TestClient
 
-from src.api.dependencies.settings import get_settings
+from src.core.settings import get_settings
 from src.main import app
 from src.persistence.database import Base, get_engine, get_session_factory
 from src.persistence.seed.bootstrap import seed_initial_data

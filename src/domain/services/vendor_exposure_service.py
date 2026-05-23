@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
+from src.core.errors import ServiceError, vendor_not_found
+from src.core.results import Result
 from src.domain.models.vendor import OutstandingPaymentObligationSummary
 from src.persistence.repositories.invoice_repository import InvoiceRepository
 from src.persistence.repositories.vendor_repository import VendorRepository
@@ -16,10 +18,12 @@ class VendorExposureService:
         self.vendor_repository = vendor_repository or VendorRepository()
         self.invoice_repository = invoice_repository or InvoiceRepository()
 
-    def get_exposure(self, session: Session, vendor_id: str) -> OutstandingPaymentObligationSummary:
-        vendor = self.vendor_repository.require_by_id(session, vendor_id)
+    def get_exposure(self, session: Session, vendor_id: str) -> Result[OutstandingPaymentObligationSummary, ServiceError]:
+        vendor = self.vendor_repository.get_by_id(session, vendor_id)
+        if vendor is None:
+            return Result.fail(vendor_not_found(vendor_id))
         aggregate = self.invoice_repository.get_exposure_aggregate(session, vendor_id)
-        return OutstandingPaymentObligationSummary.zero(
+        summary = OutstandingPaymentObligationSummary.zero(
             vendor_id=vendor.id,
             vendor_name=vendor.name,
             included_invoice_statuses=aggregate.included_invoice_statuses,
@@ -31,3 +35,4 @@ class VendorExposureService:
             open_invoice_count=aggregate.open_invoice_count,
             included_invoice_statuses=aggregate.included_invoice_statuses,
         )
+        return Result.ok(summary)
