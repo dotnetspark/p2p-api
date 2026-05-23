@@ -1,0 +1,233 @@
+openapi: 3.1.0
+info:
+  title: Vendor Management API
+  version: 0.1.0
+  description: >-
+    Agent-facing contract for vendor eligibility and AP exposure in the P2P proof of
+    concept.
+servers:
+  - url: http://localhost:8000
+paths:
+  /vendors/{vendorId}/eligibility:
+    get:
+      summary: Retrieve vendor eligibility for new obligations
+      operationId: getVendorEligibility
+      parameters:
+        - $ref: "#/components/parameters/VendorId"
+        - $ref: "#/components/parameters/CorrelationId"
+      responses:
+        "200":
+          description: Vendor eligibility returned successfully
+          headers:
+            X-Correlation-ID:
+              $ref: "#/components/headers/CorrelationId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VendorEligibilityResponse"
+              examples:
+                activeVendor:
+                  value:
+                    vendor_id: V-100
+                    vendor_name: ACME Building Supply
+                    is_active: true
+                    obligations_allowed: true
+                    blocking_reason_code: null
+                    blocking_reason_message: null
+        "404":
+          description: Vendor was not found
+          headers:
+            X-Correlation-ID:
+              $ref: "#/components/headers/CorrelationId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                vendorNotFound:
+                  value:
+                    error:
+                      code: VENDOR_NOT_FOUND
+                      category: business
+                      retryable: false
+                      message: Vendor V-999 does not exist.
+                      correlation_id: test-missing-vendor
+        "503":
+          description: Temporary infrastructure failure
+          headers:
+            X-Correlation-ID:
+              $ref: "#/components/headers/CorrelationId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                temporaryFailure:
+                  value:
+                    error:
+                      code: DEPENDENCY_TEMPORARILY_UNAVAILABLE
+                      category: infrastructure
+                      retryable: true
+                      message: A temporary dependency failure prevented request completion.
+                      correlation_id: test-temporary-failure
+  /vendors/{vendorId}/exposure:
+    get:
+      summary: Retrieve current AP exposure for a vendor
+      operationId: getVendorExposure
+      parameters:
+        - $ref: "#/components/parameters/VendorId"
+        - $ref: "#/components/parameters/CorrelationId"
+      responses:
+        "200":
+          description: Exposure summary returned successfully
+          headers:
+            X-Correlation-ID:
+              $ref: "#/components/headers/CorrelationId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VendorExposureResponse"
+              examples:
+                exposureSummary:
+                  value:
+                    vendor_id: V-100
+                    vendor_name: ACME Building Supply
+                    as_of_timestamp: "2026-05-23T00:00:00Z"
+                    outstanding_total_amount: 1750.00
+                    open_invoice_count: 2
+                    included_invoice_statuses:
+                      - PENDING
+                      - MATCHED
+                      - APPROVED
+        "404":
+          description: Vendor was not found
+          headers:
+            X-Correlation-ID:
+              $ref: "#/components/headers/CorrelationId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: Temporary infrastructure failure
+          headers:
+            X-Correlation-ID:
+              $ref: "#/components/headers/CorrelationId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                temporaryFailure:
+                  value:
+                    error:
+                      code: DEPENDENCY_TEMPORARILY_UNAVAILABLE
+                      category: infrastructure
+                      retryable: true
+                      message: A temporary dependency failure prevented request completion.
+                      correlation_id: test-temporary-failure
+components:
+  parameters:
+    VendorId:
+      name: vendorId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Stable vendor identifier
+    CorrelationId:
+      name: X-Correlation-ID
+      in: header
+      required: true
+      schema:
+        type: string
+      description: Caller-supplied correlation identifier echoed in success and error responses
+  headers:
+    CorrelationId:
+      description: Correlation identifier echoed from the request
+      schema:
+        type: string
+  schemas:
+    VendorEligibilityResponse:
+      type: object
+      required:
+        - vendor_id
+        - vendor_name
+        - is_active
+        - obligations_allowed
+      properties:
+        vendor_id:
+          type: string
+        vendor_name:
+          type: string
+        is_active:
+          type: boolean
+        obligations_allowed:
+          type: boolean
+        blocking_reason_code:
+          type:
+            - string
+            - "null"
+        blocking_reason_message:
+          type:
+            - string
+            - "null"
+    VendorExposureResponse:
+      type: object
+      required:
+        - vendor_id
+        - vendor_name
+        - as_of_timestamp
+        - outstanding_total_amount
+        - open_invoice_count
+        - included_invoice_statuses
+      properties:
+        vendor_id:
+          type: string
+        vendor_name:
+          type: string
+        as_of_timestamp:
+          type: string
+          format: date-time
+        outstanding_total_amount:
+          type: number
+          format: decimal
+        open_invoice_count:
+          type: integer
+          minimum: 0
+        included_invoice_statuses:
+          type: array
+          items:
+            type: string
+          description: Invoice statuses included when computing exposure
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - category
+            - retryable
+            - message
+            - correlation_id
+          properties:
+            code:
+              type: string
+              enum:
+                - VENDOR_NOT_FOUND
+                - VENDOR_INACTIVE
+                - DEPENDENCY_TEMPORARILY_UNAVAILABLE
+            category:
+              type: string
+              enum:
+                - business
+                - infrastructure
+            retryable:
+              type: boolean
+            message:
+              type: string
+            correlation_id:
+              type: string

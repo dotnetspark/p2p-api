@@ -8,12 +8,15 @@
 
 **Input**: User description: "$ARGUMENTS"
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 <!--
   IMPORTANT: User stories should be PRIORITIZED as user journeys ordered by importance.
   Each user story/journey must be INDEPENDENTLY TESTABLE - meaning if you implement just ONE of them,
   you should still have a viable MVP (Minimum Viable Product) that delivers value.
+
+  For agent-facing APIs, describe the actor as the calling agent or orchestrated system,
+  and define what machine-observable outcome proves the journey succeeded.
 
   Assign priorities (P1, P2, P3, etc.) to each story, where P1 is the most critical.
   Think of each story as a standalone slice of functionality that can be:
@@ -75,10 +78,13 @@
   Fill them out with the right edge cases.
 -->
 
-- What happens when [boundary condition]?
-- How does system handle [error scenario]?
+- What happens when the same mutating request is retried with the same idempotency key?
+- How does the system respond when a workflow transition is valid in general but invalid
+  for the resource's current state?
+- How does the system signal transient upstream failure versus permanent validation
+  failure so an agent can recover safely?
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 <!--
   ACTION REQUIRED: The content in this section represents placeholders.
@@ -93,17 +99,27 @@
 - **FR-004**: System MUST [data requirement, e.g., "persist user preferences"]
 - **FR-005**: System MUST [behavior, e.g., "log all security events"]
 
-*Example of marking unclear requirements:*
+### API Contract & Recovery Requirements _(mandatory for APIs)_
+
+- Define the exact request and response shape for each endpoint involved in the feature.
+- Define machine-readable error codes and indicate whether each failure is retryable,
+  correctable by the caller, or terminal.
+- Define resource states, transition rules, and idempotency expectations for each
+  mutating operation.
+- Define the identifiers and telemetry fields required to correlate retries, state
+  changes, and downstream side effects.
+
+_Example of marking unclear requirements:_
 
 - **FR-006**: System MUST authenticate users via [NEEDS CLARIFICATION: auth method not specified - email/password, SSO, OAuth?]
 - **FR-007**: System MUST retain user data for [NEEDS CLARIFICATION: retention period not specified]
 
-### Key Entities *(include if feature involves data)*
+### Key Entities _(include if feature involves data)_
 
 - **[Entity 1]**: [What it represents, key attributes without implementation]
 - **[Entity 2]**: [What it represents, relationships to other entities]
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 <!--
   ACTION REQUIRED: Define measurable success criteria.
@@ -116,6 +132,9 @@
 - **SC-002**: [Measurable metric, e.g., "System handles 1000 concurrent users without degradation"]
 - **SC-003**: [User satisfaction metric, e.g., "90% of users successfully complete primary task on first attempt"]
 - **SC-004**: [Business metric, e.g., "Reduce support tickets related to [X] by 50%"]
+
+For agent-facing APIs, include at least one outcome for autonomous completion rate and
+at least one outcome for successful recovery from a retryable failure.
 
 ## Assumptions
 

@@ -38,9 +38,18 @@
 
 ## Constitution Check
 
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+_GATE: Must pass before Phase 0 research. Re-check after Phase 1 design._
 
-[Gates determined based on constitution file]
+- Contract clarity: Every planned endpoint, event, and error shape is explicitly defined
+  for machine interpretation, including stable codes and recovery semantics.
+- Workflow determinism: Resource states, allowed transitions, idempotency strategy, and
+  stale-write handling are documented for every mutating operation.
+- Verification-first delivery: Contract artifacts, examples, and failing contract tests
+  are identified before implementation tasks are approved.
+- Traceability: Correlation IDs, audit-relevant entity identifiers, and structured
+  telemetry requirements are captured for new flows.
+- PoC guardrails: Any simplification, stubbed dependency, or deferred production concern
+  is listed explicitly and shown not to weaken external contract semantics.
 
 ## Project Structure
 
@@ -57,6 +66,7 @@ specs/[###-feature]/
 ```
 
 ### Source Code (repository root)
+
 <!--
   ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
   for this feature. Delete unused options and expand the chosen structure with
@@ -107,7 +117,7 @@ directories captured above]
 
 > **Fill ONLY if Constitution Check has violations that must be justified**
 
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+| Violation                  | Why Needed         | Simpler Alternative Rejected Because |
+| -------------------------- | ------------------ | ------------------------------------ |
+| [e.g., 4th project]        | [current need]     | [why 3 projects insufficient]        |
+| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient]  |

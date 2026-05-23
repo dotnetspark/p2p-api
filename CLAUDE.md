@@ -1,4 +1,60 @@
-<!-- SPECKIT START -->
-For additional context about technologies to be used, project structure,
-shell commands, and other important information, read the current plan
-<!-- SPECKIT END -->
+For additional context about project rules, read `.specify/memory/constitution.md`
+first. For the active feature's technologies, project structure, shell commands, and
+implementation details, read `specs/001-vendor-management/plan.md`.
+
+## Git workflow — follow on every change
+
+### Before writing any code
+
+- Confirm a GitHub Issue exists. If not, stop and ask.
+- Create branch from `main`:
+  - New capability → `feat/NNN-short-description`
+  - Bug fix → `fix/NNN-short-description`
+  - NNN = GitHub Issue number, zero-padded to 3 digits (e.g. `feat/001-po-lifecycle`)
+
+### Commits
+
+- One conventional commit type per commit — never mix
+- Format: `<type>(<scope>): <description>`
+- Allowed types: `feat`, `fix`, `chore`, `docs`, `test`, `refactor`
+- Examples:
+  ```
+  feat(po): add partial goods receipt accumulation
+  fix(invoice): correct received_value calculation on 3-way match
+  chore(deps): pin fastapi to 0.115.0
+  docs(readme): add MCP server setup instructions
+  refactor(gl_service): extract account lookup to helper function
+  test(invoice): add match endpoint contract test
+  ```
+- Commit after each logical unit — never batch unrelated changes in one commit
+
+### Every PR must include
+
+- `CHANGELOG.md` entry under the correct version heading (merge gate — no exceptions)
+- PR title: `<type>(<scope>): <description> [#NNN]`
+- Squash merge if more than one commit
+
+### CHANGELOG.md format (Keep a Changelog)
+
+```markdown
+## [Unreleased]
+
+### Added
+
+- POST /invoices/{id}/pay to complete PO lifecycle and transition PO to CLOSED [#NNN]
+
+### Fixed
+
+- 3-way match now correctly accumulates partial receipts across multiple GoodsReceipts [#NNN]
+```
+
+### Milestone tags — on `main` after merge only
+
+```
+v0.1.0  Phase 1 complete — core API working
+v0.2.0  Phase 2 complete — stretch goals working
+v0.3.0  Phase 3 complete — MCP server working
+v1.0.0  All phases green, interview-ready
+```
+
+Never tag on a feature branch. Tags go on `main` after the squash merge.
