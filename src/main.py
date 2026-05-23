@@ -6,7 +6,7 @@ from fastapi import FastAPI
 
 from src.api.dependencies.error_handlers import register_error_handlers
 from src.api.dependencies.request_context import CorrelationIdMiddleware
-from src.api.dependencies.settings import get_settings
+from src.core.settings import get_settings
 from src.api.router import build_router
 from src.persistence.database import Base, get_engine, session_scope
 from src.persistence.seed.bootstrap import seed_initial_data
