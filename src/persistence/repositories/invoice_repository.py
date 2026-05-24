@@ -9,11 +9,11 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from src.domain.models.invoice import (
-    BLOCKED,
+    INVOICE_STATUS_MATCHED,
+    INVOICE_STATUS_PENDING,
     Invoice,
     InvoiceMatchResult,
-    MATCHED_CLEAN,
-    MATCHED_WITH_WARNING,
+    MATCH_OUTCOME_BLOCKED,
     OpenLineExposure,
     OpenExposureWarning,
     OPEN_RECEIPT_EXPOSURE,
@@ -22,7 +22,7 @@ from src.persistence.models.invoice import InvoiceRow
 from src.persistence.models.invoice_match_snapshot import InvoiceMatchSnapshotRow
 
 
-UNPAID_STATUSES = ["PENDING", "MATCHED", "APPROVED"]
+UNPAID_STATUSES = [INVOICE_STATUS_PENDING, INVOICE_STATUS_MATCHED, "APPROVED"]
 
 
 @dataclass(frozen=True)
@@ -139,7 +139,9 @@ class InvoiceRepository:
                 remaining_order_value=Decimal(row.remaining_order_value).quantize(Decimal("0.01")),
                 open_lines=open_lines,
             )
-        invoice_status = "PENDING" if row.outcome == BLOCKED else "MATCHED"
+        invoice_status = (
+            INVOICE_STATUS_PENDING if row.outcome == MATCH_OUTCOME_BLOCKED else INVOICE_STATUS_MATCHED
+        )
         return InvoiceMatchResult(
             snapshot_id=row.id,
             invoice_id=row.invoice_id,
