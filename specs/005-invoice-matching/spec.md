@@ -250,7 +250,8 @@ unreceived quantity and verifying that the match succeeds with a non-blocking wa
 
 - Approving invoices or generating GL entries
 - Paying invoices or transitioning purchase orders to `CLOSED`
-- Registering multiple invoices against the same purchase order
+- Registering multiple invoices against the same purchase order in this PoC slice;
+  production systems would normally support that broader lifecycle
 - Allocating a single invoice across multiple purchase orders
 - Handling vendor credit limits or AP exposure escalation workflows
 

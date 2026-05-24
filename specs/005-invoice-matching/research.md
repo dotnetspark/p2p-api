@@ -58,6 +58,24 @@ purchase order.
   of this feature because the specification treats invoice amount as one aggregate
   value.
 
+## Decision: Constrain the current slice to one invoice per purchase order, while documenting multiple invoices per PO as the production direction
+
+**Rationale**: The original assignment says an invoice is linked to a purchase order,
+but it does not explicitly require one invoice per purchase order. For this interview
+slice, constraining the implementation to one invoice per PO keeps the data model,
+matching semantics, and recovery logic small enough to ship cleanly. That is a PoC
+tradeoff, not a statement about ideal production ERP behavior.
+
+**Alternatives considered**:
+
+- Support multiple invoices per PO immediately: closer to production ERP practice,
+  but it would require cumulative invoiced-value or quantity controls, more nuanced
+  approval rules, and likely invoice-line modeling that would materially expand the
+  slice.
+- Leave the rule undocumented: simpler in the short term, but it would wrongly imply
+  that the current one-invoice-per-PO implementation was inherited directly from the
+  original assignment rather than chosen for scoped delivery.
+
 ## Decision: Use three explicit synchronous match outcomes with HTTP `422`, `202`, and `200`
 
 **Rationale**: The user explicitly required three distinct outcomes. The contract
