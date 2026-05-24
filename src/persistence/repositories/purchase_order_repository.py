@@ -6,6 +6,7 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
+from src.domain.models.invoice import OpenLineExposure, ReceivedValueSnapshot
 from src.domain.models.goods_receipt import GoodsReceiptLineRecord, GoodsReceiptRecord
 from src.domain.models.purchase_order import PurchaseOrder, PurchaseOrderLineItem
 from src.persistence.models.goods_receipt import GoodsReceiptRow
@@ -84,6 +85,53 @@ class PurchaseOrderRepository:
             line_row.qty_received = domain_line.qty_received
         session.flush()
         return purchase_order
+
+    def assign_invoice(self, session: Session, purchase_order_id: str, invoice_id: str) -> None:
+        row = session.get(PurchaseOrderRow, purchase_order_id)
+        if row is None:
+            raise ValueError(f"Purchase order {purchase_order_id} not found for invoice assignment.")
+        row.invoice_id = invoice_id
+        session.flush()
+
+    def get_received_value_snapshot(
+        self,
+        session: Session,
+        purchase_order_id: str,
+        invoice_amount: Decimal,
+    ) -> ReceivedValueSnapshot | None:
+        purchase_order = self.get_by_id(session, purchase_order_id)
+        if purchase_order is None:
+            return None
+
+        ordered_value = sum(
+            (Decimal(line_item.qty_ordered) * line_item.unit_cost for line_item in purchase_order.line_items),
+            Decimal("0.00"),
+        ).quantize(Decimal("0.01"))
+        received_value = sum(
+            (Decimal(line_item.qty_received) * line_item.unit_cost for line_item in purchase_order.line_items),
+            Decimal("0.00"),
+        ).quantize(Decimal("0.01"))
+        open_lines = [
+            OpenLineExposure(
+                po_line_item_id=line_item.id,
+                sku=line_item.sku,
+                qty_remaining=line_item.qty_remaining,
+                remaining_value=(Decimal(line_item.qty_remaining) * line_item.unit_cost).quantize(Decimal("0.01")),
+            )
+            for line_item in purchase_order.line_items
+            if line_item.qty_remaining > 0
+        ]
+        normalized_invoice_amount = invoice_amount.quantize(Decimal("0.01"))
+        return ReceivedValueSnapshot(
+            purchase_order_id=purchase_order_id,
+            received_value=received_value,
+            ordered_value=ordered_value,
+            difference_amount=(received_value - normalized_invoice_amount).quantize(Decimal("0.01")),
+            remaining_order_value=(ordered_value - received_value).quantize(Decimal("0.01")),
+            is_fully_received=all(line_item.qty_remaining == 0 for line_item in purchase_order.line_items),
+            open_lines=open_lines,
+            purchase_order_status=purchase_order.status,
+        )
 
     def _to_domain(self, row: PurchaseOrderRow) -> PurchaseOrder:
         line_items = [

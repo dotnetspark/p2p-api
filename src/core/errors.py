@@ -10,6 +10,10 @@ PURCHASE_ORDER_NOT_FOUND = "PURCHASE_ORDER_NOT_FOUND"
 PURCHASE_ORDER_INVALID_STATE = "PURCHASE_ORDER_INVALID_STATE"
 PURCHASE_ORDER_LINE_INVALID = "PURCHASE_ORDER_LINE_INVALID"
 PURCHASE_ORDER_OVER_RECEIPT = "PURCHASE_ORDER_OVER_RECEIPT"
+INVOICE_NOT_FOUND = "INVOICE_NOT_FOUND"
+INVOICE_DUPLICATE_REFERENCE = "INVOICE_DUPLICATE_REFERENCE"
+INVOICE_VENDOR_PO_MISMATCH = "INVOICE_VENDOR_PO_MISMATCH"
+INVOICE_INVALID_STATE = "INVOICE_INVALID_STATE"
 DEPENDENCY_TEMPORARILY_UNAVAILABLE = "DEPENDENCY_TEMPORARILY_UNAVAILABLE"
 
 
@@ -98,6 +102,48 @@ def purchase_order_over_receipt(
             f"Recording {attempted_received_quantity} units for line {po_line_item_id} "
             f"would exceed ordered quantity {ordered_quantity} from current received "
             f"quantity {current_received_quantity}."
+        ),
+        category="business",
+        retryable=False,
+    )
+
+
+def invoice_not_found(invoice_id: str) -> ServiceError:
+    return ServiceError(
+        code=INVOICE_NOT_FOUND,
+        message=f"Invoice {invoice_id} does not exist.",
+        category="business",
+        retryable=False,
+    )
+
+
+def invoice_duplicate_reference(vendor_id: str, invoice_number: str) -> ServiceError:
+    return ServiceError(
+        code=INVOICE_DUPLICATE_REFERENCE,
+        message=(
+            f"Invoice reference {invoice_number} is already registered for vendor {vendor_id}."
+        ),
+        category="business",
+        retryable=False,
+    )
+
+
+def invoice_vendor_po_mismatch(vendor_id: str, purchase_order_id: str) -> ServiceError:
+    return ServiceError(
+        code=INVOICE_VENDOR_PO_MISMATCH,
+        message=(
+            f"Purchase order {purchase_order_id} does not belong to vendor {vendor_id}."
+        ),
+        category="business",
+        retryable=False,
+    )
+
+
+def invoice_invalid_state(invoice_id: str, current_state: str, action: str) -> ServiceError:
+    return ServiceError(
+        code=INVOICE_INVALID_STATE,
+        message=(
+            f"Invoice {invoice_id} is in state {current_state} and cannot be used for {action}."
         ),
         category="business",
         retryable=False,
