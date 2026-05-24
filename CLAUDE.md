@@ -57,10 +57,24 @@ implementation details, read `specs/005-invoice-matching/plan.md`.
 ### Milestone tags — on `main` after merge only
 
 ```
-v0.1.0  Phase 1 complete — core API working
-v0.2.0  Phase 2 complete — stretch goals working
-v0.3.0  Phase 3 complete — MCP server working
+v0.1.0  Phase 1 complete — vendor management working
+v0.2.0  Phase 2 complete — PO lifecycle working
+v0.3.0  Phase 3 complete — invoice matching working
 v1.0.0  All phases green, interview-ready
 ```
 
 Never tag on a feature branch. Tags go on `main` after the squash merge.
+
+### Release tag bump rule
+
+- After a PR is squash-merged to `main`, decide whether that merge earns a release tag.
+- If it earns a release tag, create the tag on the `main` merge commit only.
+- Bump the tag using Semantic Versioning:
+  - `MAJOR` for breaking or interview-reset milestones that intentionally redefine the public contract
+  - `MINOR` for the next completed feature phase or materially new capability
+  - `PATCH` for post-release fixes, corrections, or non-breaking behavior changes on an already tagged phase
+- Do not skip or reuse version numbers. If a tag was placed on the wrong commit, move it immediately and document the correction in the PR or follow-up commit.
+- Current phase mapping in this repo is fixed as:
+  - `v0.1.0` vendor management
+  - `v0.2.0` PO lifecycle
+  - `v0.3.0` invoice matching
