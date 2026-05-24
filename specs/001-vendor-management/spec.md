@@ -162,3 +162,8 @@ the unpaid obligations associated with that vendor.
   vendor exposure information.
 - This feature is limited to visibility and enforcement around vendor availability and
   exposure assessment; broader invoice approval policy remains in separate features.
+
+## Assignment Alignment
+
+Intentional deviations from the original assignment are documented in
+`enhancement.md` for this feature.

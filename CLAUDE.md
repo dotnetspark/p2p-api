@@ -1,6 +1,6 @@
 For additional context about project rules, read `.specify/memory/constitution.md`
 first. For the active feature's technologies, project structure, shell commands, and
-implementation details, read `specs/001-vendor-management/plan.md`.
+implementation details, read `specs/004-po-lifecycle/plan.md`.
 
 ## Git workflow — follow on every change
 
