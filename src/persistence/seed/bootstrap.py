@@ -6,6 +6,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from src.persistence.models.invoice import InvoiceRow
+from src.persistence.models.goods_receipt import GoodsReceiptLineRow, GoodsReceiptRow
+from src.persistence.models.idempotency import IdempotencyKeyRow
+from src.persistence.models.purchase_order import PurchaseOrderLineRow, PurchaseOrderRow
 from src.persistence.models.vendor import VendorRow
 
 

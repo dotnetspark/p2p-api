@@ -1,6 +1,6 @@
 # Feature Specification: Purchase Order Lifecycle
 
-**Feature Branch**: `feat/004-po-receiving`
+**Feature Branch**: `feat/004-po-lifecycle`
 
 **Created**: 2026-05-23
 
@@ -154,6 +154,23 @@ visibility. It does not complete the later closure step.
 - What happens when a receipt completes the final remaining quantity across all open
   lines on the order?
 
+### Edge Case Resolutions
+
+- Retrying a previously successful create, submit, or receive request with the same
+  idempotency key and the same semantic request payload returns the original logical
+  success outcome without creating duplicate effects.
+- Reusing an idempotency key for a different create, submit, or receive request is a
+  permanent caller error and MUST be rejected with a stable machine-readable business
+  error rather than surfaced as a retryable infrastructure failure.
+- A goods receipt requested for any order state other than `SUBMITTED` MUST be
+  rejected as an invalid workflow state.
+- Temporary persistence failures MUST be surfaced as retryable infrastructure errors,
+  while inactive vendor, invalid state, over-receipt, and idempotency-key conflict
+  cases MUST be surfaced as non-retryable business errors.
+- When an accepted goods receipt completes the final remaining quantity on every open
+  order line, the purchase order transitions to `RECEIVED` and does not move to
+  `CLOSED` in this feature.
+
 ## Requirements _(mandatory)_
 
 ### Functional Requirements
@@ -216,6 +233,9 @@ visibility. It does not complete the later closure step.
   effects.
 - Failure responses must use stable machine-readable codes and indicate whether the
   failure is retryable, correctable by the caller, or terminal.
+- Reusing an idempotency key for a different semantic request MUST return a stable
+  non-retryable business error so an agent can distinguish caller correction from a
+  transient dependency retry.
 - All contract responses must carry identifiers and telemetry fields required to
   correlate order creation, submission, and receipt events across retries.
 - The workflow state model must explicitly define at least the draft, submitted,

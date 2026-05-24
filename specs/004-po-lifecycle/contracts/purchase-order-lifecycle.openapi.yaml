@@ -1,0 +1,344 @@
+openapi: 3.1.0
+info:
+  title: Purchase Order Lifecycle API
+  version: 0.1.0
+  description: >-
+    Agent-facing contract for purchase-order creation, submission, receipt tracking,
+    and order-state queries in the P2P proof of concept. Receipt processing is
+    additive across multiple accepted deliveries. The CLOSED state is part of the
+    shared lifecycle model but is not transitioned by this feature.
+servers:
+  - url: http://localhost:8000
+paths:
+  /purchase-orders:
+    post:
+      summary: Create a draft purchase order
+      operationId: createPurchaseOrder
+      parameters:
+        - $ref: "#/components/parameters/CorrelationId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePurchaseOrderRequest"
+      responses:
+        "201":
+          description: Draft purchase order created successfully
+          headers:
+            X-Correlation-ID:
+              $ref: "#/components/headers/CorrelationId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseOrderResponse"
+        "404":
+          description: Vendor was not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Vendor is inactive or the idempotency key was already used for a different create request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Purchase-order input is invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /purchase-orders/{purchaseOrderId}/submit:
+    post:
+      summary: Submit a draft purchase order for fulfilment
+      operationId: submitPurchaseOrder
+      parameters:
+        - $ref: "#/components/parameters/PurchaseOrderId"
+        - $ref: "#/components/parameters/CorrelationId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Purchase order submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseOrderResponse"
+        "404":
+          description: Purchase order was not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Purchase order is not in draft state or the idempotency key was already used for a different submit request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /purchase-orders/{purchaseOrderId}/receive:
+    post:
+      summary: Record a goods receipt against a submitted purchase order
+      operationId: receivePurchaseOrderGoods
+      description: >-
+        Accepts a new receipt event and adds the accepted quantities to the existing
+        cumulative totals for each referenced line item. The request must never
+        replace prior accepted qty_received progress.
+      parameters:
+        - $ref: "#/components/parameters/PurchaseOrderId"
+        - $ref: "#/components/parameters/CorrelationId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGoodsReceiptRequest"
+      responses:
+        "200":
+          description: Goods receipt recorded successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseOrderResponse"
+        "404":
+          description: Purchase order was not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Purchase order is not eligible for receipt, the receipt would exceed ordered quantities, or the idempotency key was already used for a different receive request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /purchase-orders/{purchaseOrderId}:
+    get:
+      summary: Retrieve the full state of a purchase order
+      operationId: getPurchaseOrder
+      parameters:
+        - $ref: "#/components/parameters/PurchaseOrderId"
+        - $ref: "#/components/parameters/CorrelationId"
+      responses:
+        "200":
+          description: Purchase order state returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseOrderResponse"
+        "404":
+          description: Purchase order was not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  parameters:
+    PurchaseOrderId:
+      name: purchaseOrderId
+      in: path
+      required: true
+      schema:
+        type: string
+    CorrelationId:
+      name: X-Correlation-ID
+      in: header
+      required: true
+      schema:
+        type: string
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: >-
+        Retry token for create, submit, and receive requests. Replaying the same
+        semantic request with the same key returns the original logical success
+        outcome. Reusing the same key for a different request returns 409
+        IDEMPOTENCY_KEY_CONFLICT.
+      schema:
+        type: string
+  headers:
+    CorrelationId:
+      description: Correlation identifier echoed from the request
+      schema:
+        type: string
+  schemas:
+    CreatePurchaseOrderRequest:
+      type: object
+      required:
+        - vendor_id
+        - line_items
+      properties:
+        vendor_id:
+          type: string
+        line_items:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/PurchaseOrderLineInput"
+    PurchaseOrderLineInput:
+      type: object
+      required:
+        - sku
+        - description
+        - qty_ordered
+        - unit_cost
+      properties:
+        sku:
+          type: string
+        description:
+          type: string
+        qty_ordered:
+          type: integer
+          minimum: 1
+        unit_cost:
+          type: number
+          format: decimal
+          exclusiveMinimum: 0
+    CreateGoodsReceiptRequest:
+      type: object
+      required:
+        - received_by
+        - line_items
+      properties:
+        received_by:
+          type: string
+        line_items:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/GoodsReceiptLineInput"
+    GoodsReceiptLineInput:
+      type: object
+      required:
+        - po_line_item_id
+        - qty_received
+      properties:
+        po_line_item_id:
+          type: string
+        qty_received:
+          type: integer
+          minimum: 1
+    PurchaseOrderResponse:
+      type: object
+      required:
+        - purchase_order_id
+        - vendor_id
+        - status
+        - line_items
+        - receipts
+      properties:
+        purchase_order_id:
+          type: string
+        vendor_id:
+          type: string
+        status:
+          type: string
+          description: >-
+            DRAFT, SUBMITTED, and RECEIVED may be returned by this feature. CLOSED
+            remains part of the shared lifecycle vocabulary for later GL Posting
+            payment completion and is not transitioned here.
+          enum:
+            - DRAFT
+            - SUBMITTED
+            - RECEIVED
+            - CLOSED
+        line_items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PurchaseOrderLineProgress"
+        receipts:
+          type: array
+          items:
+            $ref: "#/components/schemas/GoodsReceiptSummary"
+    PurchaseOrderLineProgress:
+      type: object
+      required:
+        - po_line_item_id
+        - sku
+        - description
+        - qty_ordered
+        - qty_received
+        - qty_remaining
+      properties:
+        po_line_item_id:
+          type: string
+        sku:
+          type: string
+        description:
+          type: string
+        qty_ordered:
+          type: integer
+        qty_received:
+          type: integer
+          description: Cumulative quantity received across all accepted goods receipts
+        qty_remaining:
+          type: integer
+    GoodsReceiptSummary:
+      type: object
+      required:
+        - goods_receipt_id
+        - received_by
+        - received_at
+        - line_items
+      properties:
+        goods_receipt_id:
+          type: string
+        received_by:
+          type: string
+        received_at:
+          type: string
+          format: date-time
+        line_items:
+          type: array
+          items:
+            $ref: "#/components/schemas/GoodsReceiptLineSummary"
+    GoodsReceiptLineSummary:
+      type: object
+      required:
+        - po_line_item_id
+        - qty_received
+      properties:
+        po_line_item_id:
+          type: string
+        qty_received:
+          type: integer
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - category
+            - retryable
+            - message
+            - correlation_id
+          properties:
+            code:
+              type: string
+              enum:
+                - VENDOR_NOT_FOUND
+                - VENDOR_INACTIVE
+                - IDEMPOTENCY_KEY_CONFLICT
+                - PURCHASE_ORDER_NOT_FOUND
+                - PURCHASE_ORDER_INVALID_STATE
+                - PURCHASE_ORDER_LINE_INVALID
+                - PURCHASE_ORDER_OVER_RECEIPT
+                - DEPENDENCY_TEMPORARILY_UNAVAILABLE
+            category:
+              type: string
+              enum:
+                - business
+                - infrastructure
+            retryable:
+              type: boolean
+            message:
+              type: string
+            correlation_id:
+              type: string
