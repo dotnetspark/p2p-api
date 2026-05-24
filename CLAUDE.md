@@ -1,6 +1,12 @@
 For additional context about project rules, read `.specify/memory/constitution.md`
-first. For the active feature's technologies, project structure, shell commands, and
-implementation details, read `specs/004-po-lifecycle/plan.md`.
+first.
+
+<!-- SPECKIT START -->
+
+For the active feature's technologies, project structure, shell commands, and
+implementation details, read `specs/005-invoice-matching/plan.md`.
+
+<!-- SPECKIT END -->
 
 ## Git workflow — follow on every change
 

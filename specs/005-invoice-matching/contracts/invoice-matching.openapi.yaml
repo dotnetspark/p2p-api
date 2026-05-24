@@ -1,0 +1,372 @@
+openapi: 3.1.0
+info:
+  title: Invoice Matching API
+  version: 0.1.0
+  description: >-
+    Agent-facing contract for invoice registration and receipt-backed invoice matching
+    in the P2P proof of concept. Match evaluation is synchronous and returns one of
+    three caller-visible outcomes: blocked with exact shortfall, matched with open
+    receipt exposure warning, or clean matched.
+servers:
+  - url: http://localhost:8000
+paths:
+  /invoices:
+    post:
+      summary: Register an invoice against a vendor and purchase order
+      operationId: createInvoice
+      parameters:
+        - $ref: "#/components/parameters/CorrelationId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateInvoiceRequest"
+      responses:
+        "201":
+          description: Invoice registered successfully
+          headers:
+            X-Correlation-ID:
+              $ref: "#/components/headers/CorrelationId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceResponse"
+        "404":
+          description: Vendor or purchase order was not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Duplicate vendor invoice reference, vendor and purchase-order mismatch, or conflicting idempotency-key reuse
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Invoice-registration input is invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /invoices/{invoiceId}/match:
+    post:
+      summary: Evaluate whether an invoice is supported by goods received
+      operationId: matchInvoice
+      description: >-
+        Replays the original logical outcome when the same semantic request is retried
+        with the same idempotency key. To intentionally re-evaluate after additional
+        goods receipts arrive, the caller must use a fresh idempotency key.
+      parameters:
+        - $ref: "#/components/parameters/InvoiceId"
+        - $ref: "#/components/parameters/CorrelationId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Invoice matched cleanly against fully received goods value
+          headers:
+            X-Correlation-ID:
+              $ref: "#/components/headers/CorrelationId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceMatchSuccessResponse"
+        "202":
+          description: Invoice matched successfully, but the purchase order still has open receipt exposure
+          headers:
+            X-Correlation-ID:
+              $ref: "#/components/headers/CorrelationId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceMatchWarningResponse"
+        "404":
+          description: Invoice or purchase order was not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflicting idempotency-key reuse or invoice workflow state not eligible for matching
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Invoice amount is not fully supported by current received value
+          headers:
+            X-Correlation-ID:
+              $ref: "#/components/headers/CorrelationId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceMatchBlockedResponse"
+components:
+  parameters:
+    InvoiceId:
+      name: invoiceId
+      in: path
+      required: true
+      schema:
+        type: string
+    CorrelationId:
+      name: X-Correlation-ID
+      in: header
+      required: true
+      schema:
+        type: string
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: >-
+        Retry token for invoice registration and matching. Replaying the same
+        semantic request with the same key returns the original logical outcome.
+        Reusing the same key for a different request returns 409
+        IDEMPOTENCY_KEY_CONFLICT. Re-evaluating after new goods receipts requires a
+        fresh key.
+      schema:
+        type: string
+  headers:
+    CorrelationId:
+      description: Correlation identifier echoed from the request
+      schema:
+        type: string
+  schemas:
+    CreateInvoiceRequest:
+      type: object
+      required:
+        - vendor_id
+        - purchase_order_id
+        - invoice_number
+        - invoice_amount
+      properties:
+        vendor_id:
+          type: string
+        purchase_order_id:
+          type: string
+        invoice_number:
+          type: string
+        invoice_amount:
+          type: string
+          pattern: ^\d+(\.\d{1,2})?$
+    InvoiceResponse:
+      type: object
+      required:
+        - invoice_id
+        - vendor_id
+        - purchase_order_id
+        - invoice_number
+        - invoice_amount
+        - status
+        - last_match_outcome
+        - next_action
+      properties:
+        invoice_id:
+          type: string
+        vendor_id:
+          type: string
+        purchase_order_id:
+          type: string
+        invoice_number:
+          type: string
+        invoice_amount:
+          type: string
+        status:
+          type: string
+          enum:
+            - PENDING
+            - MATCHED
+        last_match_outcome:
+          type: string
+          enum:
+            - NONE
+            - BLOCKED
+            - MATCHED_WITH_WARNING
+            - MATCHED
+        next_action:
+          type: string
+          enum:
+            - REQUEST_MATCH
+    InvoiceMatchBase:
+      type: object
+      required:
+        - invoice_id
+        - purchase_order_id
+        - invoice_status
+        - last_match_outcome
+        - match_status
+        - invoice_amount
+        - received_value
+        - ordered_value
+        - difference_amount
+        - remaining_order_value
+        - all_lines_fully_received
+        - open_lines
+        - next_action
+      properties:
+        invoice_id:
+          type: string
+        purchase_order_id:
+          type: string
+        invoice_status:
+          type: string
+          enum:
+            - PENDING
+            - MATCHED
+        last_match_outcome:
+          type: string
+          enum:
+            - BLOCKED
+            - MATCHED_WITH_WARNING
+            - MATCHED
+        match_status:
+          type: string
+          enum:
+            - BLOCKED
+            - MATCHED_WITH_WARNING
+            - MATCHED
+        invoice_amount:
+          type: string
+        received_value:
+          type: string
+        ordered_value:
+          type: string
+        difference_amount:
+          type: string
+          description: Signed value of received_value minus invoice_amount
+        remaining_order_value:
+          type: string
+        all_lines_fully_received:
+          type: boolean
+        open_lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/OpenLineExposure"
+        next_action:
+          type: string
+          enum:
+            - WAIT_FOR_RECEIPT
+            - CORRECT_INVOICE
+            - PROCEED_TO_APPROVAL
+    InvoiceMatchSuccessResponse:
+      allOf:
+        - $ref: "#/components/schemas/InvoiceMatchBase"
+        - type: object
+          required:
+            - matched_at
+          properties:
+            matched_at:
+              type: string
+              format: date-time
+    InvoiceMatchWarningResponse:
+      allOf:
+        - $ref: "#/components/schemas/InvoiceMatchBase"
+        - type: object
+          required:
+            - matched_at
+            - warning
+          properties:
+            matched_at:
+              type: string
+              format: date-time
+            warning:
+              $ref: "#/components/schemas/OpenExposureWarning"
+    InvoiceMatchBlockedResponse:
+      allOf:
+        - $ref: "#/components/schemas/InvoiceMatchBase"
+        - type: object
+          required:
+            - shortfall_amount
+            - next_action
+          properties:
+            shortfall_amount:
+              type: string
+            next_action:
+              type: string
+              enum:
+                - WAIT_FOR_RECEIPT
+                - CORRECT_INVOICE
+    OpenExposureWarning:
+      type: object
+      required:
+        - code
+        - message
+        - exposure_amount
+        - purchase_order_status
+        - remaining_order_value
+        - open_lines
+      properties:
+        code:
+          type: string
+          enum:
+            - OPEN_RECEIPT_EXPOSURE
+        message:
+          type: string
+        exposure_amount:
+          type: string
+        purchase_order_status:
+          type: string
+          enum:
+            - SUBMITTED
+            - RECEIVED
+        remaining_order_value:
+          type: string
+        open_lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/OpenLineExposure"
+    OpenLineExposure:
+      type: object
+      required:
+        - po_line_item_id
+        - sku
+        - qty_remaining
+        - remaining_value
+      properties:
+        po_line_item_id:
+          type: string
+        sku:
+          type: string
+        qty_remaining:
+          type: integer
+        remaining_value:
+          type: string
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - category
+            - retryable
+            - message
+            - correlation_id
+          properties:
+            code:
+              type: string
+              enum:
+                - VENDOR_NOT_FOUND
+                - PURCHASE_ORDER_NOT_FOUND
+                - INVOICE_NOT_FOUND
+                - INVOICE_DUPLICATE_REFERENCE
+                - INVOICE_VENDOR_PO_MISMATCH
+                - INVOICE_INVALID_STATE
+                - IDEMPOTENCY_KEY_CONFLICT
+                - DEPENDENCY_TEMPORARILY_UNAVAILABLE
+            category:
+              type: string
+              enum:
+                - business
+                - infrastructure
+            retryable:
+              type: boolean
+            message:
+              type: string
+            correlation_id:
+              type: string
