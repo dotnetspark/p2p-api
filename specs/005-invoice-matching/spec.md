@@ -62,10 +62,10 @@ workflow state.
    system returns the original logical success outcome without creating a duplicate
    invoice.
 4. **Given** a valid invoice registration succeeds, **When** the system returns the
-  result, **Then** the invoice begins in a pending state and is not yet matched or
-  approved.
+   result, **Then** the invoice begins in a pending state and is not yet matched or
+   approved.
 5. **Given** a valid invoice registration succeeds, **When** the system returns the
-  result, **Then** it tells the agent that the next step is to request invoice matching.
+   result, **Then** it tells the agent that the next step is to request invoice matching.
 
 ---
 
@@ -121,8 +121,8 @@ unreceived quantity and verifying that the match succeeds with a non-blocking wa
    returns a warning that fulfilment remains open.
 2. **Given** a successful match on a partially received purchase order, **When** the
    system returns the result, **Then** it reports enough structured context about open
-  receipt exposure for the agent to decide whether to proceed immediately or wait,
-  including the specific open lines and how much remains open on each one.
+   receipt exposure for the agent to decide whether to proceed immediately or wait,
+   including the specific open lines and how much remains open on each one.
 3. **Given** all ordered goods have been fully received and the invoice amount is
    within received value, **When** the agent requests matching, **Then** the system
    returns a clean successful match result without an open-exposure warning.
