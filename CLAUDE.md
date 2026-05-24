@@ -1,6 +1,10 @@
 For additional context about project rules, read `.specify/memory/constitution.md`
 first.
 
+## Original Assignment
+
+For more details on the original assignment, read `original_assignment.md`.
+
 <!-- SPECKIT START -->
 
 For the active feature's technologies, project structure, shell commands, and
