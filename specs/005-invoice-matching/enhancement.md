@@ -48,3 +48,28 @@ responses.
 - The constitution prioritizes autonomous agent interpretation.
 - The earlier draft already pointed in this direction by requiring exact shortfall,
   proceed-or-wait guidance, and specific open-line reporting.
+
+### 4. The current single-invoice-per-PO rule is a PoC scope constraint, not an original-assignment requirement
+
+The original assignment requires that an invoice be linked to a purchase order, but
+it does not explicitly require that only one invoice may ever exist for that purchase
+order. The current repository narrows scope to one invoice per purchase order for the
+interview slice so the implemented workflow stays small, deterministic, and easy to
+verify inside the phased feature plan.
+
+**Why**:
+
+- The 60-minute challenge prioritizes shipping a coherent end-to-end slice over
+  implementing cumulative invoicing, invoice-line allocation, and invoice-balance
+  controls.
+- The current feature already carries enough complexity in receipt-backed matching,
+  idempotent replay, warning versus blocking outcomes, and machine-actionable
+  recovery guidance.
+
+**Production direction**:
+
+- A production P2P system would normally support multiple invoices against the same
+  purchase order.
+- The next evolution would remove the one-to-one purchase-order invoice constraint,
+  track cumulative invoiced quantity or value, and likely move matching from header
+  totals toward line-level invoicing against purchase-order and receipt progress.
