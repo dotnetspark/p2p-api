@@ -6,13 +6,13 @@ from decimal import Decimal
 from uuid import uuid4
 
 
-PENDING = "PENDING"
-MATCHED = "MATCHED"
+INVOICE_STATUS_PENDING = "PENDING"
+INVOICE_STATUS_MATCHED = "MATCHED"
 
-OUTCOME_NONE = "NONE"
-BLOCKED = "BLOCKED"
-MATCHED_WITH_WARNING = "MATCHED_WITH_WARNING"
-MATCHED_CLEAN = "MATCHED"
+MATCH_OUTCOME_NONE = "NONE"
+MATCH_OUTCOME_BLOCKED = "BLOCKED"
+MATCH_OUTCOME_WARNING = "MATCHED_WITH_WARNING"
+MATCH_OUTCOME_CLEAN = "MATCHED"
 
 REQUEST_MATCH = "REQUEST_MATCH"
 WAIT_FOR_RECEIPT = "WAIT_FOR_RECEIPT"
@@ -90,9 +90,9 @@ class InvoiceMatchResult:
 
     @property
     def http_status_code(self) -> int:
-        if self.match_status == BLOCKED:
+        if self.match_status == MATCH_OUTCOME_BLOCKED:
             return 422
-        if self.match_status == MATCHED_WITH_WARNING:
+        if self.match_status == MATCH_OUTCOME_WARNING:
             return 202
         return 200
 
@@ -112,18 +112,18 @@ def build_pending_invoice(
         purchase_order_id=purchase_order_id,
         invoice_number=invoice_number,
         invoice_amount=invoice_amount.quantize(Decimal("0.01")),
-        status=PENDING,
-        last_match_outcome=OUTCOME_NONE,
+        status=INVOICE_STATUS_PENDING,
+        last_match_outcome=MATCH_OUTCOME_NONE,
         created_at=timestamp,
     )
 
 
 def apply_match_result(invoice: Invoice, match_result: InvoiceMatchResult) -> Invoice:
-    if match_result.match_status == BLOCKED:
-        return replace(invoice, last_match_outcome=BLOCKED)
+    if match_result.match_status == MATCH_OUTCOME_BLOCKED:
+        return replace(invoice, last_match_outcome=MATCH_OUTCOME_BLOCKED)
     return replace(
         invoice,
-        status=MATCHED,
+        status=INVOICE_STATUS_MATCHED,
         last_match_outcome=match_result.match_status,
         matched_at=match_result.matched_at,
     )

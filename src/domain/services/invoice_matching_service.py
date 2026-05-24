@@ -17,13 +17,13 @@ from src.core.errors import (
 from src.core.idempotency import build_idempotency_fingerprint
 from src.core.results import Result
 from src.domain.models.invoice import (
-    BLOCKED,
     CORRECT_INVOICE,
+    INVOICE_STATUS_MATCHED,
+    INVOICE_STATUS_PENDING,
     InvoiceMatchResult,
-    MATCHED,
-    MATCHED_CLEAN,
-    MATCHED_WITH_WARNING,
-    PENDING,
+    MATCH_OUTCOME_BLOCKED,
+    MATCH_OUTCOME_CLEAN,
+    MATCH_OUTCOME_WARNING,
     PROCEED_TO_APPROVAL,
     WAIT_FOR_RECEIPT,
     apply_match_result,
@@ -69,7 +69,7 @@ class InvoiceMatchingService:
         invoice = self.invoice_repository.get_by_id(session, invoice_id)
         if invoice is None:
             return Result.fail(invoice_not_found(invoice_id))
-        if invoice.status not in {PENDING, MATCHED}:
+        if invoice.status not in {INVOICE_STATUS_PENDING, INVOICE_STATUS_MATCHED}:
             return Result.fail(invoice_invalid_state(invoice_id, invoice.status, "invoice matching"))
 
         purchase_order = self.purchase_order_repository.get_by_id(session, invoice.purchase_order_id)
@@ -148,9 +148,9 @@ class InvoiceMatchingService:
                 snapshot_id=snapshot_id,
                 invoice_id=invoice_id,
                 purchase_order_id=purchase_order_id,
-                invoice_status=PENDING,
-                last_match_outcome=BLOCKED,
-                match_status=BLOCKED,
+                invoice_status=INVOICE_STATUS_PENDING,
+                last_match_outcome=MATCH_OUTCOME_BLOCKED,
+                match_status=MATCH_OUTCOME_BLOCKED,
                 invoice_amount=invoice_amount,
                 received_value=receipt_snapshot.received_value,
                 ordered_value=receipt_snapshot.ordered_value,
@@ -176,9 +176,9 @@ class InvoiceMatchingService:
                 snapshot_id=snapshot_id,
                 invoice_id=invoice_id,
                 purchase_order_id=purchase_order_id,
-                invoice_status=MATCHED,
-                last_match_outcome=MATCHED_WITH_WARNING,
-                match_status=MATCHED_WITH_WARNING,
+                invoice_status=INVOICE_STATUS_MATCHED,
+                last_match_outcome=MATCH_OUTCOME_WARNING,
+                match_status=MATCH_OUTCOME_WARNING,
                 invoice_amount=invoice_amount,
                 received_value=receipt_snapshot.received_value,
                 ordered_value=receipt_snapshot.ordered_value,
@@ -198,9 +198,9 @@ class InvoiceMatchingService:
             snapshot_id=snapshot_id,
             invoice_id=invoice_id,
             purchase_order_id=purchase_order_id,
-            invoice_status=MATCHED,
-            last_match_outcome=MATCHED_CLEAN,
-            match_status=MATCHED_CLEAN,
+            invoice_status=INVOICE_STATUS_MATCHED,
+            last_match_outcome=MATCH_OUTCOME_CLEAN,
+            match_status=MATCH_OUTCOME_CLEAN,
             invoice_amount=invoice_amount,
             received_value=receipt_snapshot.received_value,
             ordered_value=receipt_snapshot.ordered_value,
