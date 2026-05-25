@@ -6,6 +6,8 @@ The format is based on Keep a Changelog.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-05-24
+
 ### Added
 
 - POST /invoices/{id}/approve now approves matched invoices and creates exactly two balanced GL entries with replay-safe responses [#17]
