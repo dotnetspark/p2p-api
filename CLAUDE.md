@@ -8,7 +8,7 @@ For more details on the original assignment, read `original_assignment.md`.
 <!-- SPECKIT START -->
 
 For the active feature's technologies, project structure, shell commands, and
-implementation details, read `specs/005-invoice-matching/plan.md`.
+implementation details, read `specs/017-invoice-approval-payment/plan.md`.
 
 <!-- SPECKIT END -->
 

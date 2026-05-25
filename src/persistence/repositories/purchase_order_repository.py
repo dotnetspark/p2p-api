@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session, selectinload
 from src.domain.models.invoice import OpenLineExposure, ReceivedValueSnapshot
 from src.domain.models.goods_receipt import GoodsReceiptLineRecord, GoodsReceiptRecord
 from src.domain.models.purchase_order import PurchaseOrder, PurchaseOrderLineItem
+from src.domain.models.purchase_order import CLOSED
 from src.persistence.models.goods_receipt import GoodsReceiptRow
 from src.persistence.models.purchase_order import PurchaseOrderLineRow, PurchaseOrderRow
 
@@ -91,6 +92,13 @@ class PurchaseOrderRepository:
         if row is None:
             raise ValueError(f"Purchase order {purchase_order_id} not found for invoice assignment.")
         row.invoice_id = invoice_id
+        session.flush()
+
+    def close(self, session: Session, purchase_order_id: str) -> None:
+        row = session.get(PurchaseOrderRow, purchase_order_id)
+        if row is None:
+            raise ValueError(f"Purchase order {purchase_order_id} not found for closure.")
+        row.status = CLOSED
         session.flush()
 
     def get_received_value_snapshot(

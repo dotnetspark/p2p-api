@@ -24,10 +24,17 @@ class InvoiceRow(Base):
     last_match_outcome: Mapped[str] = mapped_column(String(24), nullable=False, default="NONE")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     matched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     vendor = relationship("VendorRow", back_populates="invoices")
     match_snapshots = relationship(
         "InvoiceMatchSnapshotRow",
+        back_populates="invoice",
+        cascade="all, delete-orphan",
+    )
+    gl_entries = relationship(
+        "GLEntryRow",
         back_populates="invoice",
         cascade="all, delete-orphan",
     )

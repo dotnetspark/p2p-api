@@ -14,6 +14,8 @@ INVOICE_NOT_FOUND = "INVOICE_NOT_FOUND"
 INVOICE_DUPLICATE_REFERENCE = "INVOICE_DUPLICATE_REFERENCE"
 INVOICE_VENDOR_PO_MISMATCH = "INVOICE_VENDOR_PO_MISMATCH"
 INVOICE_INVALID_STATE = "INVOICE_INVALID_STATE"
+GL_ENTRIES_MISSING = "GL_ENTRIES_MISSING"
+GL_ENTRIES_UNBALANCED = "GL_ENTRIES_UNBALANCED"
 DEPENDENCY_TEMPORARILY_UNAVAILABLE = "DEPENDENCY_TEMPORARILY_UNAVAILABLE"
 
 
@@ -147,6 +149,24 @@ def invoice_invalid_state(invoice_id: str, current_state: str, action: str) -> S
         ),
         category="business",
         retryable=False,
+    )
+
+
+def gl_entries_missing(invoice_id: str) -> ServiceError:
+    return ServiceError(
+        code=GL_ENTRIES_MISSING,
+        message=f"Invoice {invoice_id} is missing the persisted GL entries required for replay.",
+        category="infrastructure",
+        retryable=True,
+    )
+
+
+def gl_entries_unbalanced(invoice_id: str) -> ServiceError:
+    return ServiceError(
+        code=GL_ENTRIES_UNBALANCED,
+        message=f"Invoice {invoice_id} has GL entries that do not satisfy the balanced posting rule.",
+        category="infrastructure",
+        retryable=True,
     )
 
 

@@ -1,0 +1,222 @@
+openapi: 3.1.0
+info:
+  title: Invoice Approval and Payment API
+  version: 0.1.0
+  description: >-
+    Agent-facing contract for invoice approval, GL posting, and payment completion in
+    the P2P proof of concept. Approval is synchronous and generates exactly two
+    balancing GL entries. Payment is synchronous and completes the invoice lifecycle by
+    marking the invoice paid and closing the linked purchase order.
+servers:
+  - url: http://localhost:8000
+paths:
+  /invoices/{invoiceId}/approve:
+    post:
+      summary: Approve a matched invoice and generate its GL entries
+      operationId: approveInvoice
+      parameters:
+        - $ref: "#/components/parameters/InvoiceId"
+        - $ref: "#/components/parameters/CorrelationId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Invoice approved and GL entries generated
+          headers:
+            X-Correlation-ID:
+              $ref: "#/components/headers/CorrelationId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceApprovalResponse"
+        "404":
+          description: Invoice not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Invoice is in the wrong state for approval or the idempotency key conflicts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: Retryable dependency failure or incomplete GL replay state prevented approval completion
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /invoices/{invoiceId}/pay:
+    post:
+      summary: Mark an approved invoice as paid and close the linked purchase order
+      operationId: payInvoice
+      parameters:
+        - $ref: "#/components/parameters/InvoiceId"
+        - $ref: "#/components/parameters/CorrelationId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Invoice paid and linked purchase order closed
+          headers:
+            X-Correlation-ID:
+              $ref: "#/components/headers/CorrelationId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoicePaymentResponse"
+        "404":
+          description: Invoice or purchase order not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Invoice is in the wrong state for payment, purchase-order closure is not allowed, or the idempotency key conflicts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: Retryable dependency failure prevented payment completion
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  parameters:
+    InvoiceId:
+      name: invoiceId
+      in: path
+      required: true
+      schema:
+        type: string
+    CorrelationId:
+      name: X-Correlation-ID
+      in: header
+      required: true
+      schema:
+        type: string
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+  headers:
+    CorrelationId:
+      description: Correlation identifier echoed from the request
+      schema:
+        type: string
+  schemas:
+    GLEntrySummary:
+      type: object
+      required:
+        - gl_entry_id
+        - account_code
+        - debit
+        - credit
+      properties:
+        gl_entry_id:
+          type: string
+        account_code:
+          type: string
+        debit:
+          type: string
+        credit:
+          type: string
+    InvoiceApprovalResponse:
+      type: object
+      required:
+        - invoice_id
+        - invoice_status
+        - purchase_order_id
+        - generated_gl_entries
+        - approved_at
+        - next_action
+      properties:
+        invoice_id:
+          type: string
+        invoice_status:
+          type: string
+          enum:
+            - APPROVED
+        purchase_order_id:
+          type: string
+        generated_gl_entries:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items:
+            $ref: "#/components/schemas/GLEntrySummary"
+        approved_at:
+          type: string
+          format: date-time
+        next_action:
+          type: string
+          enum:
+            - MARK_PAID
+    InvoicePaymentResponse:
+      type: object
+      required:
+        - invoice_id
+        - invoice_status
+        - purchase_order_id
+        - purchase_order_status
+        - paid_at
+        - next_action
+      properties:
+        invoice_id:
+          type: string
+        invoice_status:
+          type: string
+          enum:
+            - PAID
+        purchase_order_id:
+          type: string
+        purchase_order_status:
+          type: string
+          enum:
+            - CLOSED
+        paid_at:
+          type: string
+          format: date-time
+        next_action:
+          type: string
+          enum:
+            - COMPLETE
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - category
+            - retryable
+            - message
+            - correlation_id
+          properties:
+            code:
+              type: string
+              enum:
+                - INVOICE_NOT_FOUND
+                - INVOICE_INVALID_STATE
+                - PURCHASE_ORDER_INVALID_STATE
+                - PURCHASE_ORDER_NOT_FOUND
+                - IDEMPOTENCY_KEY_CONFLICT
+                - GL_ENTRIES_MISSING
+                - GL_ENTRIES_UNBALANCED
+                - DEPENDENCY_TEMPORARILY_UNAVAILABLE
+            category:
+              type: string
+              enum:
+                - business
+                - infrastructure
+            retryable:
+              type: boolean
+            message:
+              type: string
+            correlation_id:
+              type: string
