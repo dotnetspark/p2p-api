@@ -214,3 +214,19 @@ def apply_goods_receipt(
         receipts=[*purchase_order.receipts, receipt_record],
     )
     return Result.ok((updated_purchase_order, receipt_record))
+
+
+def close_purchase_order_for_payment(
+    purchase_order: PurchaseOrder,
+) -> Result[PurchaseOrder, ServiceError]:
+    if purchase_order.status != RECEIVED:
+        return Result.fail(
+            purchase_order_invalid_state(
+                purchase_order.id,
+                purchase_order.status,
+                RECEIVED,
+                "payment completion",
+            )
+        )
+
+    return Result.ok(replace(purchase_order, status=CLOSED))

@@ -6,6 +6,15 @@ The format is based on Keep a Changelog.
 
 ## [Unreleased]
 
+### Added
+
+- POST /invoices/{id}/approve now approves matched invoices and creates exactly two balanced GL entries with replay-safe responses [#17]
+- POST /invoices/{id}/pay now marks approved invoices paid and closes linked receipted purchase orders [#17]
+
+### Fixed
+
+- Approval now derives expense accounts deterministically from repo-local vendor classification rules and falls back to UNCLASSIFIED_EXPENSE instead of blocking on missing category data [#17]
+
 ## [0.3.0] - 2026-05-24
 
 ### Added

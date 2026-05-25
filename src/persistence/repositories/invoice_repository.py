@@ -9,6 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from src.domain.models.invoice import (
+    INVOICE_STATUS_APPROVED,
     INVOICE_STATUS_MATCHED,
     INVOICE_STATUS_PENDING,
     Invoice,
@@ -22,7 +23,7 @@ from src.persistence.models.invoice import InvoiceRow
 from src.persistence.models.invoice_match_snapshot import InvoiceMatchSnapshotRow
 
 
-UNPAID_STATUSES = [INVOICE_STATUS_PENDING, INVOICE_STATUS_MATCHED, "APPROVED"]
+UNPAID_STATUSES = [INVOICE_STATUS_PENDING, INVOICE_STATUS_MATCHED, INVOICE_STATUS_APPROVED]
 
 
 @dataclass(frozen=True)
@@ -64,6 +65,8 @@ class InvoiceRepository:
                 last_match_outcome=invoice.last_match_outcome,
                 created_at=invoice.created_at,
                 matched_at=invoice.matched_at,
+                approved_at=invoice.approved_at,
+                paid_at=invoice.paid_at,
             )
         )
         session.flush()
@@ -76,6 +79,8 @@ class InvoiceRepository:
         row.status = invoice.status
         row.last_match_outcome = invoice.last_match_outcome
         row.matched_at = invoice.matched_at
+        row.approved_at = invoice.approved_at
+        row.paid_at = invoice.paid_at
         session.flush()
         return invoice
 
@@ -193,8 +198,10 @@ class InvoiceRepository:
             invoice_amount=Decimal(row.amount).quantize(Decimal("0.01")),
             status=row.status,
             last_match_outcome=row.last_match_outcome,
-            created_at=row.created_at,
-            matched_at=row.matched_at,
+            created_at=InvoiceRepository._normalize_datetime(row.created_at),
+            matched_at=InvoiceRepository._normalize_datetime(row.matched_at),
+            approved_at=InvoiceRepository._normalize_datetime(row.approved_at),
+            paid_at=InvoiceRepository._normalize_datetime(row.paid_at),
         )
 
     @staticmethod
@@ -202,4 +209,10 @@ class InvoiceRepository:
         stmt = select(InvoiceRow.po_id).where(InvoiceRow.id == invoice_id)
         purchase_order_id = session.execute(stmt).scalar_one()
         return purchase_order_id
+
+    @staticmethod
+    def _normalize_datetime(value: datetime | None) -> datetime | None:
+        if value is None:
+            return None
+        return value.replace(tzinfo=UTC) if value.tzinfo is None else value
 

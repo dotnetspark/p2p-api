@@ -8,6 +8,8 @@ from uuid import uuid4
 
 INVOICE_STATUS_PENDING = "PENDING"
 INVOICE_STATUS_MATCHED = "MATCHED"
+INVOICE_STATUS_APPROVED = "APPROVED"
+INVOICE_STATUS_PAID = "PAID"
 
 MATCH_OUTCOME_NONE = "NONE"
 MATCH_OUTCOME_BLOCKED = "BLOCKED"
@@ -18,8 +20,12 @@ REQUEST_MATCH = "REQUEST_MATCH"
 WAIT_FOR_RECEIPT = "WAIT_FOR_RECEIPT"
 CORRECT_INVOICE = "CORRECT_INVOICE"
 PROCEED_TO_APPROVAL = "PROCEED_TO_APPROVAL"
+MARK_PAID = "MARK_PAID"
+COMPLETE = "COMPLETE"
 
 OPEN_RECEIPT_EXPOSURE = "OPEN_RECEIPT_EXPOSURE"
+AP_CONTROL_ACCOUNT = "AP_CONTROL"
+UNCLASSIFIED_EXPENSE_ACCOUNT = "UNCLASSIFIED_EXPENSE"
 
 
 @dataclass(frozen=True)
@@ -63,6 +69,18 @@ class Invoice:
     last_match_outcome: str
     created_at: datetime
     matched_at: datetime | None = None
+    approved_at: datetime | None = None
+    paid_at: datetime | None = None
+
+
+@dataclass(frozen=True)
+class GLEntry:
+    id: str
+    invoice_id: str
+    account_code: str
+    debit: Decimal
+    credit: Decimal
+    posted_at: datetime
 
 
 @dataclass(frozen=True)
@@ -97,6 +115,26 @@ class InvoiceMatchResult:
         return 200
 
 
+@dataclass(frozen=True)
+class InvoiceApprovalResult:
+    invoice_id: str
+    purchase_order_id: str
+    invoice_status: str
+    generated_gl_entries: list[GLEntry]
+    approved_at: datetime
+    next_action: str
+
+
+@dataclass(frozen=True)
+class InvoicePaymentResult:
+    invoice_id: str
+    purchase_order_id: str
+    invoice_status: str
+    purchase_order_status: str
+    paid_at: datetime
+    next_action: str
+
+
 def build_pending_invoice(
     vendor_id: str,
     purchase_order_id: str,
@@ -126,6 +164,22 @@ def apply_match_result(invoice: Invoice, match_result: InvoiceMatchResult) -> In
         status=INVOICE_STATUS_MATCHED,
         last_match_outcome=match_result.match_status,
         matched_at=match_result.matched_at,
+    )
+
+
+def apply_invoice_approval(invoice: Invoice, approved_at: datetime | None = None) -> Invoice:
+    return replace(
+        invoice,
+        status=INVOICE_STATUS_APPROVED,
+        approved_at=approved_at or datetime.now(UTC),
+    )
+
+
+def apply_invoice_payment(invoice: Invoice, paid_at: datetime | None = None) -> Invoice:
+    return replace(
+        invoice,
+        status=INVOICE_STATUS_PAID,
+        paid_at=paid_at or datetime.now(UTC),
     )
 
 

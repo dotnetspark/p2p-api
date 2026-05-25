@@ -6,7 +6,15 @@ from decimal import Decimal
 from pydantic import Field
 
 from src.api.schemas.common import APIModel
-from src.domain.models.invoice import Invoice, InvoiceMatchResult, OpenExposureWarning, OpenLineExposure
+from src.domain.models.invoice import (
+    GLEntry,
+    Invoice,
+    InvoiceApprovalResult,
+    InvoiceMatchResult,
+    InvoicePaymentResult,
+    OpenExposureWarning,
+    OpenLineExposure,
+)
 
 
 class CreateInvoiceRequest(APIModel):
@@ -113,4 +121,60 @@ class InvoiceMatchResponse(APIModel):
             matched_at=result.matched_at,
             shortfall_amount=result.shortfall_amount,
             warning=(OpenExposureWarningResponse.from_domain(result.warning) if result.warning is not None else None),
+        )
+
+
+class GLEntrySummaryResponse(APIModel):
+    gl_entry_id: str
+    account_code: str
+    debit: Decimal
+    credit: Decimal
+
+    @classmethod
+    def from_domain(cls, gl_entry: GLEntry) -> "GLEntrySummaryResponse":
+        return cls(
+            gl_entry_id=gl_entry.id,
+            account_code=gl_entry.account_code,
+            debit=gl_entry.debit,
+            credit=gl_entry.credit,
+        )
+
+
+class InvoiceApprovalResponse(APIModel):
+    invoice_id: str
+    invoice_status: str
+    purchase_order_id: str
+    generated_gl_entries: list[GLEntrySummaryResponse]
+    approved_at: datetime
+    next_action: str
+
+    @classmethod
+    def from_domain(cls, result: InvoiceApprovalResult) -> "InvoiceApprovalResponse":
+        return cls(
+            invoice_id=result.invoice_id,
+            invoice_status=result.invoice_status,
+            purchase_order_id=result.purchase_order_id,
+            generated_gl_entries=[GLEntrySummaryResponse.from_domain(gl_entry) for gl_entry in result.generated_gl_entries],
+            approved_at=result.approved_at,
+            next_action=result.next_action,
+        )
+
+
+class InvoicePaymentResponse(APIModel):
+    invoice_id: str
+    invoice_status: str
+    purchase_order_id: str
+    purchase_order_status: str
+    paid_at: datetime
+    next_action: str
+
+    @classmethod
+    def from_domain(cls, result: InvoicePaymentResult) -> "InvoicePaymentResponse":
+        return cls(
+            invoice_id=result.invoice_id,
+            invoice_status=result.invoice_status,
+            purchase_order_id=result.purchase_order_id,
+            purchase_order_status=result.purchase_order_status,
+            paid_at=result.paid_at,
+            next_action=result.next_action,
         )
