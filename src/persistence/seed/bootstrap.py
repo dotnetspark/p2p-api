@@ -36,7 +36,47 @@ def seed_initial_data(session: Session) -> None:
             create_idempotency_key=None,
             submit_idempotency_key=None,
             invoice_id=None,
-        )
+        ),
+        PurchaseOrderRow(
+            id="PO-1001",
+            vendor_id="V-100",
+            status="SUBMITTED",
+            created_at=created_at,
+            submitted_at=created_at,
+            create_idempotency_key=None,
+            submit_idempotency_key=None,
+            invoice_id="INV-1001",
+        ),
+        PurchaseOrderRow(
+            id="PO-1002",
+            vendor_id="V-100",
+            status="RECEIVED",
+            created_at=created_at,
+            submitted_at=created_at,
+            create_idempotency_key=None,
+            submit_idempotency_key=None,
+            invoice_id="INV-1002",
+        ),
+        PurchaseOrderRow(
+            id="PO-1003",
+            vendor_id="V-100",
+            status="CLOSED",
+            created_at=created_at,
+            submitted_at=created_at,
+            create_idempotency_key=None,
+            submit_idempotency_key=None,
+            invoice_id="INV-1003",
+        ),
+        PurchaseOrderRow(
+            id="PO-2001",
+            vendor_id="V-300",
+            status="RECEIVED",
+            created_at=created_at,
+            submitted_at=created_at,
+            create_idempotency_key=None,
+            submit_idempotency_key=None,
+            invoice_id="INV-2001",
+        ),
     ]
     purchase_order_lines = [
         PurchaseOrderLineRow(
@@ -47,6 +87,42 @@ def seed_initial_data(session: Session) -> None:
             qty_ordered=100,
             qty_received=60,
             unit_cost=Decimal("10.00"),
+        ),
+        PurchaseOrderLineRow(
+            id="POL-1001-01",
+            po_id="PO-1001",
+            sku="SKU-INV-1001",
+            description="Pending Seed Item",
+            qty_ordered=1,
+            qty_received=0,
+            unit_cost=Decimal("1250.00"),
+        ),
+        PurchaseOrderLineRow(
+            id="POL-1002-01",
+            po_id="PO-1002",
+            sku="SKU-INV-1002",
+            description="Approved Seed Item",
+            qty_ordered=1,
+            qty_received=1,
+            unit_cost=Decimal("500.00"),
+        ),
+        PurchaseOrderLineRow(
+            id="POL-1003-01",
+            po_id="PO-1003",
+            sku="SKU-INV-1003",
+            description="Paid Seed Item",
+            qty_ordered=1,
+            qty_received=1,
+            unit_cost=Decimal("99.99"),
+        ),
+        PurchaseOrderLineRow(
+            id="POL-2001-01",
+            po_id="PO-2001",
+            sku="SKU-INV-2001",
+            description="Matched Seed Item",
+            qty_ordered=1,
+            qty_received=1,
+            unit_cost=Decimal("300.00"),
         )
     ]
     goods_receipts = [
@@ -56,6 +132,27 @@ def seed_initial_data(session: Session) -> None:
             received_by="seed-loader",
             received_at=created_at,
             idempotency_key="seed-gr-200-01",
+        ),
+        GoodsReceiptRow(
+            id="GR-1002-01",
+            po_id="PO-1002",
+            received_by="seed-loader",
+            received_at=created_at,
+            idempotency_key="seed-gr-1002-01",
+        ),
+        GoodsReceiptRow(
+            id="GR-1003-01",
+            po_id="PO-1003",
+            received_by="seed-loader",
+            received_at=created_at,
+            idempotency_key="seed-gr-1003-01",
+        ),
+        GoodsReceiptRow(
+            id="GR-2001-01",
+            po_id="PO-2001",
+            received_by="seed-loader",
+            received_at=created_at,
+            idempotency_key="seed-gr-2001-01",
         )
     ]
     goods_receipt_lines = [
@@ -64,6 +161,24 @@ def seed_initial_data(session: Session) -> None:
             goods_receipt_id="GR-200-01",
             po_line_item_id="POL-200-01",
             qty_received=60,
+        ),
+        GoodsReceiptLineRow(
+            id="GRL-1002-01",
+            goods_receipt_id="GR-1002-01",
+            po_line_item_id="POL-1002-01",
+            qty_received=1,
+        ),
+        GoodsReceiptLineRow(
+            id="GRL-1003-01",
+            goods_receipt_id="GR-1003-01",
+            po_line_item_id="POL-1003-01",
+            qty_received=1,
+        ),
+        GoodsReceiptLineRow(
+            id="GRL-2001-01",
+            goods_receipt_id="GR-2001-01",
+            po_line_item_id="POL-2001-01",
+            qty_received=1,
         )
     ]
     invoices = [

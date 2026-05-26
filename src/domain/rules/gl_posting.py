@@ -66,7 +66,7 @@ def build_balanced_gl_entries(
 
 
 def gl_entries_are_balanced(gl_entries: list[GLEntry]) -> bool:
-    if len(gl_entries) != 2:
+    if not gl_entries:
         return False
     total_debit = sum((entry.debit for entry in gl_entries), Decimal("0.00")).quantize(Decimal("0.01"))
     total_credit = sum((entry.credit for entry in gl_entries), Decimal("0.00")).quantize(Decimal("0.01"))
