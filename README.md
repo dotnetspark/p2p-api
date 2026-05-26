@@ -229,8 +229,8 @@ flowchart TD
     F -- No --> H[Clear stale active alert]
     G --> I[Mark credit check COMPLETED]
     H --> I
-    I --> J[Agent can query GET /credit-checks/{id}]
-    I --> K[Agent can inspect GET /vendors/{id}/exposure]
+  I --> J[Agent queries credit check status]
+  I --> K[Agent inspects vendor exposure]
 ```
 
 This is one of the clearest examples of the repo's machine-first approach: the workflow is asynchronous, but not opaque.
