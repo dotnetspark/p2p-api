@@ -1,42 +1,58 @@
 # Interview Edge Cases
 
-Use this document as a quick review sheet for concrete repository issues that are better treated as fix candidates than open-ended interview tradeoffs.
+Use this document to prepare for boundary-condition and ambiguity questions that may come up during an interview discussion.
 
-## Seed Data Integrity
+The goal here is not to list repo bugs. The goal is to capture business or contract edge cases that are either already addressed in the repo or still open to discussion.
 
-### Seeded invoices must not point at missing purchase orders
+Items that are primarily design tradeoffs or interview prompts belong in `docs/interview-conversation-starters.md` instead of this document.
 
-- Existing seed invoices reference `PO-1001`, `PO-1002`, `PO-1003`, and `PO-2001`
-- If those purchase orders are not seeded, demo data becomes internally inconsistent
-- That conflicts with the assignment expectation that seeded data should let the interviewer call endpoints immediately
-- The strongest fix is to make the seed set coherent so seeded invoices always reference seeded purchase orders
+## Already Addressed
 
-## Accounting Invariants
+### Partial receipt but invoice amount is still covered
 
-### Balanced-posting validation should check balance, not just a two-line assumption
+- If the invoice amount is less than or equal to received value, matching can still succeed even when the purchase order is not fully received
+- The repo treats this as a warning outcome rather than a hard failure
+- This is already addressed in the invoice-matching feature design
 
-- `gl_entries_are_balanced` should answer whether debits equal credits
-- A separate rule can enforce exactly two entries when that workflow requires it
-- An empty list should still be treated as invalid
+### Invoice amount exactly equals received value
 
-### GL integrity failures should not look retryable
+- Exact equality is not overbilling
+- The repo treats it as clean only when the purchase order is fully received
+- If lines remain open, it is still a warning case rather than a blocked one
 
-- Missing or unbalanced persisted GL entries are integrity failures, not transient service outages
-- Agents should not see those as `503` with `retryable=true`
-- The safer behavior is a non-retryable server error classification
+### Re-matching after more goods are received
 
-## API Contract Hygiene
+- A previously blocked or warning match can be re-evaluated after additional receipts arrive
+- The repo already addresses this, but requires a new idempotency key for a fresh evaluation
 
-### Remove dead fallbacks when the contract is already explicit
+### Missing vendor category for expense posting
 
-- `InvoiceApprovalResult` already carries `credit_check_id`
-- The response mapper should access it directly instead of using a defensive `getattr` fallback that no longer serves a purpose
+- The assignment requires expense posting based on vendor category but does not define a complete vendor-category model
+- The repo already addresses this by falling back to `UNCLASSIFIED_EXPENSE`
 
-## Review Heuristic
+### Retrying create or approve after a credit check was already scheduled
 
-When deciding whether something belongs in this document, ask:
+- Without a replay rule, retries could create duplicate checks or duplicate alert side effects
+- The repo already addresses this by replaying the same `credit_check_id`
 
-- Does it violate an explicit assignment expectation or a hard correctness invariant?
-- Would leaving it in place produce misleading runtime behavior rather than just an interview discussion point?
+## Still Open To Discussion
 
-If yes, it belongs here.
+### Should one purchase order allow multiple invoices?
+
+- The assignment does not require a one-to-one invoice-to-PO relationship
+- The repo narrows scope to one invoice per purchase order for PoC simplicity
+- In production, multiple invoices per purchase order is the more plausible model
+
+### Should payment be modeled as lifecycle completion or treasury integration?
+
+- The assignment stops at approval and GL posting
+- The repo adds payment as a local business completion step
+- An interviewer may ask whether that is sufficient or whether settlement integration should exist
+
+## Interview Use
+
+For each edge case, be ready to answer three things:
+
+- what the assignment explicitly says
+- what the repo currently does
+- what you would keep or change in a production-grade version
