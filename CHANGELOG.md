@@ -8,6 +8,7 @@ The format is based on Keep a Changelog.
 
 ### Fixed
 
+- README SDD Mermaid flow now renders more reliably on GitHub by simplifying node labels in the remaining failing diagram [#25]
 - README Mermaid credit-alert flow now renders correctly on GitHub by removing parser-breaking endpoint placeholders from flowchart node labels [#23]
 
 ### Added
