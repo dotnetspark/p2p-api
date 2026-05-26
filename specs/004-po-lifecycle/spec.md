@@ -4,7 +4,7 @@
 
 **Created**: 2026-05-23
 
-**Status**: Draft
+**Status**: Completed
 
 **Input**: User description: "A procurement agent needs to create a purchase order against an active vendor specifying what goods are needed and at what price, submit it for fulfilment, and record goods as they arrive including partial deliveries across multiple receipts. The agent must be able to query the full state of an order including per-line receipt progress to decide whether conditions are right to proceed with invoicing. An order that has never been submitted cannot receive goods. Cumulative quantities received across all deliveries cannot exceed what was ordered."
 

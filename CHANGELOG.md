@@ -8,6 +8,7 @@ The format is based on Keep a Changelog.
 
 ### Added
 
+- Repository README now documents the project scope, SDD workflow, feature map, architecture, and interview framing with Mermaid diagrams [#21]
 - Invoice create and approve now return replay-safe `credit_check_id` values, persist vendor credit checks, expose `GET /credit-checks/{id}`, and surface active credit alerts on vendor exposure [#19]
 
 ## [0.4.0] - 2026-05-24

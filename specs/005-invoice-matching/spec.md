@@ -4,7 +4,7 @@
 
 **Created**: 2026-05-24
 
-**Status**: Draft
+**Status**: Completed
 
 **Input**: User description: "A finance agent needs to register an invoice from a vendor against a specific purchase order and verify that the invoice amount is supported by goods actually received — not just ordered. If the invoice exceeds what has been received the agent must be told the exact shortfall and what to do next. If goods are only partially received but the invoice is within the received value the agent should be warned about open exposure but not blocked from proceeding. The same invoice reference from the same vendor cannot be registered twice."
 
