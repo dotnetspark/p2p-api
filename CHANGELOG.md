@@ -8,6 +8,7 @@ The format is based on Keep a Changelog.
 
 ### Fixed
 
+- Seed data now backs seeded invoices with matching purchase orders, GL integrity failures are non-retryable 500s, and approval response mapping removes a dead credit-check fallback [#31]
 - README assignment and SDD Mermaid flowcharts now use simplified GitHub-compatible labels after the remaining render failures on the repo homepage [#27]
 - README SDD Mermaid flow now renders more reliably on GitHub by simplifying node labels in the remaining failing diagram [#25]
 - README Mermaid credit-alert flow now renders correctly on GitHub by removing parser-breaking endpoint placeholders from flowchart node labels [#23]

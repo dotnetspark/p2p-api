@@ -160,7 +160,7 @@ class InvoiceApprovalResponse(APIModel):
             generated_gl_entries=[GLEntrySummaryResponse.from_domain(gl_entry) for gl_entry in result.generated_gl_entries],
             approved_at=result.approved_at,
             next_action=result.next_action,
-            credit_check_id=getattr(result, "credit_check_id", None),
+            credit_check_id=result.credit_check_id,
         )
 
 

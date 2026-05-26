@@ -158,7 +158,7 @@ def gl_entries_missing(invoice_id: str) -> ServiceError:
         code=GL_ENTRIES_MISSING,
         message=f"Invoice {invoice_id} is missing the persisted GL entries required for replay.",
         category="infrastructure",
-        retryable=True,
+        retryable=False,
     )
 
 
@@ -167,7 +167,7 @@ def gl_entries_unbalanced(invoice_id: str) -> ServiceError:
         code=GL_ENTRIES_UNBALANCED,
         message=f"Invoice {invoice_id} has GL entries that do not satisfy the balanced posting rule.",
         category="infrastructure",
-        retryable=True,
+        retryable=False,
     )
 
 
