@@ -16,8 +16,10 @@ from src.core.errors import (
 )
 from src.core.idempotency import build_idempotency_fingerprint
 from src.core.results import Result
-from src.domain.models.invoice import Invoice, build_pending_invoice
+from src.domain.models.invoice import InvoiceCreateResult, build_pending_invoice
+from src.domain.services.vendor_credit_alert_service import VendorCreditAlertService
 from src.persistence.repositories.idempotency_repository import IdempotencyRepository
+from src.persistence.repositories.credit_check_repository import CreditCheckRepository
 from src.persistence.repositories.invoice_repository import InvoiceRepository
 from src.persistence.repositories.purchase_order_repository import PurchaseOrderRepository
 from src.persistence.repositories.vendor_repository import VendorRepository
@@ -33,11 +35,19 @@ class InvoiceService:
         purchase_order_repository: PurchaseOrderRepository | None = None,
         invoice_repository: InvoiceRepository | None = None,
         idempotency_repository: IdempotencyRepository | None = None,
+        credit_check_repository: CreditCheckRepository | None = None,
+        vendor_credit_alert_service: VendorCreditAlertService | None = None,
     ) -> None:
         self.vendor_repository = vendor_repository or VendorRepository()
         self.purchase_order_repository = purchase_order_repository or PurchaseOrderRepository()
         self.invoice_repository = invoice_repository or InvoiceRepository()
         self.idempotency_repository = idempotency_repository or IdempotencyRepository()
+        self.credit_check_repository = credit_check_repository or CreditCheckRepository()
+        self.vendor_credit_alert_service = vendor_credit_alert_service or VendorCreditAlertService(
+            credit_check_repository=self.credit_check_repository,
+            invoice_repository=self.invoice_repository,
+            vendor_repository=self.vendor_repository,
+        )
 
     def create_invoice(
         self,
@@ -47,7 +57,8 @@ class InvoiceService:
         invoice_number: str,
         invoice_amount: Decimal,
         idempotency_key: str,
-    ) -> Result[Invoice, ServiceError]:
+        correlation_id: str,
+    ) -> Result[InvoiceCreateResult, ServiceError]:
         normalized_amount = invoice_amount.quantize(Decimal("0.01"))
         request_fingerprint = build_idempotency_fingerprint(
             CREATE_INVOICE_OPERATION,
@@ -102,25 +113,39 @@ class InvoiceService:
         try:
             self.invoice_repository.add(session, invoice)
             self.purchase_order_repository.assign_invoice(session, purchase_order_id, invoice.id)
+            credit_check = self.vendor_credit_alert_service.create_pending_for_invoice_create(
+                session=session,
+                vendor_id=vendor_id,
+                invoice_id=invoice.id,
+                correlation_id=correlation_id,
+                idempotency_key=idempotency_key,
+            )
             self.idempotency_repository.add(
                 session,
                 key=idempotency_key,
                 operation=CREATE_INVOICE_OPERATION,
                 request_fingerprint=request_fingerprint,
                 resource_id=invoice.id,
+                credit_check_id=credit_check.id,
             )
             session.commit()
         except Exception:
             session.rollback()
             return Result.fail(dependency_temporarily_unavailable())
-        return Result.ok(invoice)
+        return Result.ok(
+            InvoiceCreateResult(
+                invoice=invoice,
+                credit_check_id=credit_check.id,
+                should_schedule_credit_check=True,
+            )
+        )
 
     def _resolve_idempotency(
         self,
         session: Session,
         idempotency_key: str,
         request_fingerprint: str,
-    ) -> Result[Invoice, ServiceError] | None:
+    ) -> Result[InvoiceCreateResult, ServiceError] | None:
         existing_record = self.idempotency_repository.get_by_key(session, idempotency_key)
         if existing_record is None:
             return None
@@ -132,4 +157,20 @@ class InvoiceService:
         existing_invoice = self.invoice_repository.get_by_id(session, existing_record.resource_id)
         if existing_invoice is None:
             return Result.fail(dependency_temporarily_unavailable())
-        return Result.ok(existing_invoice)
+        credit_check_id = existing_record.credit_check_id
+        if credit_check_id is None:
+            credit_check = self.credit_check_repository.get_by_idempotency_key(
+                session,
+                idempotency_key,
+                "CREATE",
+            )
+            if credit_check is None:
+                return Result.fail(dependency_temporarily_unavailable())
+            credit_check_id = credit_check.id
+        return Result.ok(
+            InvoiceCreateResult(
+                invoice=existing_invoice,
+                credit_check_id=credit_check_id,
+                should_schedule_credit_check=False,
+            )
+        )

@@ -14,6 +14,7 @@ class IdempotencyRecord:
     operation: str
     request_fingerprint: str
     resource_id: str
+    credit_check_id: str | None
     created_at: datetime
 
 
@@ -27,6 +28,7 @@ class IdempotencyRepository:
             operation=row.operation,
             request_fingerprint=row.request_fingerprint,
             resource_id=row.resource_id,
+            credit_check_id=row.credit_check_id,
             created_at=row.created_at,
         )
 
@@ -37,12 +39,14 @@ class IdempotencyRepository:
         operation: str,
         request_fingerprint: str,
         resource_id: str,
+        credit_check_id: str | None = None,
     ) -> IdempotencyRecord:
         record = IdempotencyRecord(
             key=key,
             operation=operation,
             request_fingerprint=request_fingerprint,
             resource_id=resource_id,
+            credit_check_id=credit_check_id,
             created_at=datetime.now(UTC),
         )
         session.add(
@@ -51,6 +55,7 @@ class IdempotencyRepository:
                 operation=record.operation,
                 request_fingerprint=record.request_fingerprint,
                 resource_id=record.resource_id,
+                credit_check_id=record.credit_check_id,
                 created_at=record.created_at,
             )
         )

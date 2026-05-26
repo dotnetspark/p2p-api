@@ -22,9 +22,9 @@ def seed_initial_data(session: Session) -> None:
     created_at = datetime.now(UTC)
 
     vendors = [
-        VendorRow(id="V-100", name="ACME Building Supply", payment_terms="NET30", is_active=True),
-        VendorRow(id="V-200", name="Beacon Aggregates", payment_terms="NET60", is_active=True),
-        VendorRow(id="V-300", name="Dormant Timber Co", payment_terms="NET30", is_active=False),
+        VendorRow(id="V-100", name="ACME Building Supply", payment_terms="NET30", credit_limit=Decimal("2000.00"), is_active=True),
+        VendorRow(id="V-200", name="Beacon Aggregates", payment_terms="NET60", credit_limit=Decimal("5000.00"), is_active=True),
+        VendorRow(id="V-300", name="Dormant Timber Co", payment_terms="NET30", credit_limit=Decimal("1000.00"), is_active=False),
     ]
     purchase_orders = [
         PurchaseOrderRow(

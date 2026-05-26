@@ -34,6 +34,15 @@ class ExposureAggregate:
     included_invoice_statuses: list[str]
 
 
+@dataclass(frozen=True)
+class TriggeringInvoiceLookup:
+    invoice_id: str
+    vendor_id: str
+    purchase_order_id: str
+    invoice_amount: Decimal
+    status: str
+
+
 class InvoiceRepository:
     def get_by_id(self, session: Session, invoice_id: str) -> Invoice | None:
         row = session.get(InvoiceRow, invoice_id)
@@ -170,14 +179,20 @@ class InvoiceRepository:
             idempotency_key=row.idempotency_key,
         )
 
-    def get_exposure_aggregate(self, session: Session, vendor_id: str) -> ExposureAggregate:
+    def get_exposure_aggregate(
+        self,
+        session: Session,
+        vendor_id: str,
+        included_statuses: list[str] | None = None,
+    ) -> ExposureAggregate:
+        statuses = included_statuses or UNPAID_STATUSES
         stmt = (
             select(
                 func.coalesce(func.sum(InvoiceRow.amount), 0),
                 func.count(InvoiceRow.id),
             )
             .where(InvoiceRow.vendor_id == vendor_id)
-            .where(InvoiceRow.status.in_(UNPAID_STATUSES))
+            .where(InvoiceRow.status.in_(statuses))
         )
         total, count = session.execute(stmt).one()
         normalized_total = Decimal(total).quantize(Decimal("0.01")) if not isinstance(total, Decimal) else total.quantize(Decimal("0.01"))
@@ -185,7 +200,19 @@ class InvoiceRepository:
             as_of_timestamp=datetime.now(UTC),
             outstanding_total_amount=normalized_total,
             open_invoice_count=count,
-            included_invoice_statuses=list(UNPAID_STATUSES),
+            included_invoice_statuses=list(statuses),
+        )
+
+    def get_triggering_invoice(self, session: Session, invoice_id: str) -> TriggeringInvoiceLookup | None:
+        row = session.get(InvoiceRow, invoice_id)
+        if row is None:
+            return None
+        return TriggeringInvoiceLookup(
+            invoice_id=row.id,
+            vendor_id=row.vendor_id,
+            purchase_order_id=row.po_id,
+            invoice_amount=Decimal(row.amount).quantize(Decimal("0.01")),
+            status=row.status,
         )
 
     @staticmethod

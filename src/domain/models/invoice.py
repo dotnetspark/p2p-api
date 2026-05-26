@@ -74,6 +74,13 @@ class Invoice:
 
 
 @dataclass(frozen=True)
+class InvoiceCreateResult:
+    invoice: Invoice
+    credit_check_id: str
+    should_schedule_credit_check: bool
+
+
+@dataclass(frozen=True)
 class GLEntry:
     id: str
     invoice_id: str
@@ -123,6 +130,8 @@ class InvoiceApprovalResult:
     generated_gl_entries: list[GLEntry]
     approved_at: datetime
     next_action: str
+    credit_check_id: str
+    should_schedule_credit_check: bool
 
 
 @dataclass(frozen=True)

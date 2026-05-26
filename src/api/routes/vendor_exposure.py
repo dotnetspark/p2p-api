@@ -21,4 +21,4 @@ def get_vendor_exposure(
     result = VendorExposureService().get_exposure(session, vendor_id)
     if result.error is not None:
         return error_to_response(request, result.error)
-    return VendorExposureResponse(**result.value.__dict__)
+    return VendorExposureResponse.from_domain(result.value)

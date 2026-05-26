@@ -17,6 +17,7 @@ INVOICE_INVALID_STATE = "INVOICE_INVALID_STATE"
 GL_ENTRIES_MISSING = "GL_ENTRIES_MISSING"
 GL_ENTRIES_UNBALANCED = "GL_ENTRIES_UNBALANCED"
 DEPENDENCY_TEMPORARILY_UNAVAILABLE = "DEPENDENCY_TEMPORARILY_UNAVAILABLE"
+CREDIT_CHECK_NOT_FOUND = "CREDIT_CHECK_NOT_FOUND"
 
 
 @dataclass(frozen=True)
@@ -176,4 +177,13 @@ def dependency_temporarily_unavailable() -> ServiceError:
         message="A temporary dependency failure prevented request completion.",
         category="infrastructure",
         retryable=True,
+    )
+
+
+def credit_check_not_found(credit_check_id: str) -> ServiceError:
+    return ServiceError(
+        code=CREDIT_CHECK_NOT_FOUND,
+        message=f"Credit check {credit_check_id} does not exist.",
+        category="business",
+        retryable=False,
     )

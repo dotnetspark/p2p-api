@@ -23,6 +23,8 @@ from src.domain.models.invoice import (
     apply_invoice_approval,
 )
 from src.domain.rules.gl_posting import build_balanced_gl_entries, gl_entries_are_balanced, resolve_expense_account_code
+from src.domain.services.vendor_credit_alert_service import VendorCreditAlertService
+from src.persistence.repositories.credit_check_repository import CreditCheckRepository
 from src.persistence.repositories.gl_entry_repository import GLEntryRepository
 from src.persistence.repositories.idempotency_repository import IdempotencyRepository
 from src.persistence.repositories.invoice_repository import InvoiceRepository
@@ -39,17 +41,26 @@ class InvoiceApprovalService:
         vendor_repository: VendorRepository | None = None,
         gl_entry_repository: GLEntryRepository | None = None,
         idempotency_repository: IdempotencyRepository | None = None,
+        credit_check_repository: CreditCheckRepository | None = None,
+        vendor_credit_alert_service: VendorCreditAlertService | None = None,
     ) -> None:
         self.invoice_repository = invoice_repository or InvoiceRepository()
         self.vendor_repository = vendor_repository or VendorRepository()
         self.gl_entry_repository = gl_entry_repository or GLEntryRepository()
         self.idempotency_repository = idempotency_repository or IdempotencyRepository()
+        self.credit_check_repository = credit_check_repository or CreditCheckRepository()
+        self.vendor_credit_alert_service = vendor_credit_alert_service or VendorCreditAlertService(
+            credit_check_repository=self.credit_check_repository,
+            invoice_repository=self.invoice_repository,
+            vendor_repository=self.vendor_repository,
+        )
 
     def approve_invoice(
         self,
         session: Session,
         invoice_id: str,
         idempotency_key: str,
+        correlation_id: str,
     ) -> Result[InvoiceApprovalResult, ServiceError]:
         request_fingerprint = build_idempotency_fingerprint(
             APPROVE_INVOICE_OPERATION,
@@ -88,12 +99,20 @@ class InvoiceApprovalService:
         try:
             self.invoice_repository.update(session, updated_invoice)
             self.gl_entry_repository.add_many(session, gl_entries)
+            credit_check = self.vendor_credit_alert_service.create_pending_for_invoice_approval(
+                session=session,
+                vendor_id=invoice.vendor_id,
+                invoice_id=invoice.id,
+                correlation_id=correlation_id,
+                idempotency_key=idempotency_key,
+            )
             self.idempotency_repository.add(
                 session,
                 key=idempotency_key,
                 operation=APPROVE_INVOICE_OPERATION,
                 request_fingerprint=request_fingerprint,
                 resource_id=invoice.id,
+                credit_check_id=credit_check.id,
             )
             session.commit()
         except Exception:
@@ -108,6 +127,8 @@ class InvoiceApprovalService:
                 generated_gl_entries=gl_entries,
                 approved_at=approved_at,
                 next_action=MARK_PAID,
+                credit_check_id=credit_check.id,
+                should_schedule_credit_check=True,
             )
         )
 
@@ -136,6 +157,17 @@ class InvoiceApprovalService:
         if not gl_entries_are_balanced(gl_entries):
             return Result.fail(gl_entries_unbalanced(invoice.id))
 
+        credit_check_id = existing_record.credit_check_id
+        if credit_check_id is None:
+            credit_check = self.credit_check_repository.get_by_idempotency_key(
+                session,
+                idempotency_key,
+                "APPROVE",
+            )
+            if credit_check is None:
+                return Result.fail(dependency_temporarily_unavailable())
+            credit_check_id = credit_check.id
+
         return Result.ok(
             InvoiceApprovalResult(
                 invoice_id=invoice.id,
@@ -144,5 +176,7 @@ class InvoiceApprovalService:
                 generated_gl_entries=gl_entries,
                 approved_at=invoice.approved_at,
                 next_action=MARK_PAID,
+                credit_check_id=credit_check_id,
+                should_schedule_credit_check=False,
             )
         )

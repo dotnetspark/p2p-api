@@ -9,6 +9,8 @@ build/
 .mypy_cache/
 .coverage
 coverage.xml
+*.log
+.env*
 .DS_Store
 Thumbs.db
 *.tmp

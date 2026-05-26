@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 from src.core.settings import get_settings
 from src.main import app
 from src.persistence.database import Base, get_engine, get_session_factory
+import src.persistence.model_registry  # noqa: F401
 from src.persistence.seed.bootstrap import seed_initial_data
 
 
