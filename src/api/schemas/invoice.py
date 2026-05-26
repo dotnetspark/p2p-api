@@ -33,9 +33,10 @@ class InvoiceResponse(APIModel):
     status: str
     last_match_outcome: str
     next_action: str
+    credit_check_id: str | None = None
 
     @classmethod
-    def from_domain(cls, invoice: Invoice) -> "InvoiceResponse":
+    def from_domain(cls, invoice: Invoice, credit_check_id: str | None = None) -> "InvoiceResponse":
         return cls(
             invoice_id=invoice.id,
             vendor_id=invoice.vendor_id,
@@ -45,6 +46,7 @@ class InvoiceResponse(APIModel):
             status=invoice.status,
             last_match_outcome=invoice.last_match_outcome,
             next_action="REQUEST_MATCH",
+            credit_check_id=credit_check_id,
         )
 
 
@@ -147,6 +149,7 @@ class InvoiceApprovalResponse(APIModel):
     generated_gl_entries: list[GLEntrySummaryResponse]
     approved_at: datetime
     next_action: str
+    credit_check_id: str | None = None
 
     @classmethod
     def from_domain(cls, result: InvoiceApprovalResult) -> "InvoiceApprovalResponse":
@@ -157,6 +160,7 @@ class InvoiceApprovalResponse(APIModel):
             generated_gl_entries=[GLEntrySummaryResponse.from_domain(gl_entry) for gl_entry in result.generated_gl_entries],
             approved_at=result.approved_at,
             next_action=result.next_action,
+            credit_check_id=getattr(result, "credit_check_id", None),
         )
 
 
@@ -177,4 +181,18 @@ class InvoicePaymentResponse(APIModel):
             purchase_order_status=result.purchase_order_status,
             paid_at=result.paid_at,
             next_action=result.next_action,
+        )
+
+
+class CreditCheckStatusResponse(APIModel):
+    status: str
+    breached: bool | None
+    alert_id: str | None
+
+    @classmethod
+    def from_domain(cls, result) -> "CreditCheckStatusResponse":
+        return cls(
+            status=result.status,
+            breached=result.breached,
+            alert_id=result.alert_id,
         )

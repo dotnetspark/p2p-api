@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 
 from src.api.dependencies.request_context import CORRELATION_HEADER, get_correlation_id
 from src.core.errors import (
+    CREDIT_CHECK_NOT_FOUND,
     DEPENDENCY_TEMPORARILY_UNAVAILABLE,
     IDEMPOTENCY_KEY_CONFLICT,
     INVOICE_DUPLICATE_REFERENCE,
@@ -39,6 +40,7 @@ ERROR_STATUS_BY_CODE = {
     GL_ENTRIES_MISSING: 503,
     GL_ENTRIES_UNBALANCED: 503,
     DEPENDENCY_TEMPORARILY_UNAVAILABLE: 503,
+    CREDIT_CHECK_NOT_FOUND: 404,
 }
 
 

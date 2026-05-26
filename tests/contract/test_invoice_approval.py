@@ -87,6 +87,8 @@ def test_invoice_approval_contract_success_and_replay(client):
     assert len(body["generated_gl_entries"]) == 2
     assert body["generated_gl_entries"] == replay_body["generated_gl_entries"]
     assert body["next_action"] == "MARK_PAID"
+    assert body["credit_check_id"].startswith("CHK-")
+    assert body["credit_check_id"] == replay_body["credit_check_id"]
     assert {entry["account_code"] for entry in body["generated_gl_entries"]} == {"AP_CONTROL", "EXPENSE_BUILDING_SUPPLY"}
     ap_control_entry = next(entry for entry in body["generated_gl_entries"] if entry["account_code"] == "AP_CONTROL")
     expense_entry = next(entry for entry in body["generated_gl_entries"] if entry["account_code"] == "EXPENSE_BUILDING_SUPPLY")

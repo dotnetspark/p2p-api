@@ -4,12 +4,15 @@ from dataclasses import dataclass
 from datetime import datetime, UTC
 from decimal import Decimal
 
+from src.domain.models.vendor_credit import CreditAlert
+
 
 @dataclass(frozen=True)
 class Vendor:
     id: str
     name: str
     payment_terms: str
+    credit_limit: Decimal
     is_active: bool
 
 
@@ -31,6 +34,7 @@ class OutstandingPaymentObligationSummary:
     outstanding_total_amount: Decimal
     open_invoice_count: int
     included_invoice_statuses: list[str]
+    active_credit_alert: CreditAlert | None = None
 
     @classmethod
     def zero(cls, vendor_id: str, vendor_name: str, included_invoice_statuses: list[str]) -> "OutstandingPaymentObligationSummary":

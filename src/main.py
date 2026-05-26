@@ -9,6 +9,7 @@ from src.api.dependencies.request_context import CorrelationIdMiddleware
 from src.core.settings import get_settings
 from src.api.router import build_router
 from src.persistence.database import Base, get_engine, session_scope
+import src.persistence.model_registry  # noqa: F401
 from src.persistence.seed.bootstrap import seed_initial_data
 
 

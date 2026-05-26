@@ -52,6 +52,7 @@ def test_invoice_registration_contract_success(client):
     assert body["status"] == "PENDING"
     assert body["last_match_outcome"] == "NONE"
     assert body["next_action"] == "REQUEST_MATCH"
+    assert body["credit_check_id"].startswith("CHK-")
 
 
 def test_invoice_registration_contract_duplicate_reference(client):
@@ -153,3 +154,4 @@ def test_invoice_registration_contract_idempotent_replay(client):
     assert first.status_code == 201
     assert replay.status_code == 201
     assert first.json()["invoice_id"] == replay.json()["invoice_id"]
+    assert first.json()["credit_check_id"] == replay.json()["credit_check_id"]
