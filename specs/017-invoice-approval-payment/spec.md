@@ -4,7 +4,7 @@
 
 **Created**: 2026-05-24
 
-**Status**: Draft
+**Status**: Completed
 
 **Input**: User description: "A finance agent needs to approve a matched invoice and have the corresponding accounting entries generated automatically — one recording the payment obligation and one recording the expense categorised by vendor type — so the organisation's books reflect the liability without manual journal entry. The agent must also be able to mark an approved invoice as paid which automatically closes the linked purchase order. No step in this lifecycle can be skipped — an invoice must be matched before it can be approved and approved before it can be paid."
 

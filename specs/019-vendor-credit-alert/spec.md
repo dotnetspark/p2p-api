@@ -4,7 +4,7 @@
 
 **Created**: 2026-05-25
 
-**Status**: Draft
+**Status**: Completed
 
 **Input**: User description: "When an invoice is created or approved the system must automatically run a background check — decoupled from the response — to determine whether the vendor's total outstanding payment obligations have exceeded their credit limit. If the threshold is breached the condition is flagged by writing an alert record. The finance agent retrieves any active alert through the vendor exposure endpoint at its next natural checkpoint before making an approval decision. The check must never slow or affect the action that triggered it. This feature flags only — it never blocks any action."
 
