@@ -6,6 +6,10 @@ The format is based on Keep a Changelog.
 
 ## [Unreleased]
 
+### Fixed
+
+- README Mermaid credit-alert flow now renders correctly on GitHub by removing parser-breaking endpoint placeholders from flowchart node labels [#23]
+
 ### Added
 
 - Repository README now documents the project scope, SDD workflow, feature map, architecture, and interview framing with Mermaid diagrams [#21]
