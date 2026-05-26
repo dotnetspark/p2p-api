@@ -72,15 +72,15 @@ That matters here because this API handles procurement commitments, invoice cont
 
 ```mermaid
 flowchart TD
-    A[User Story / Assignment Slice] --> B[spec.md]
-    B --> C[plan.md]
-    C --> D[data-model.md]
-    C --> E[contracts]
-    D --> F[Implementation]
-    E --> F
-    F --> G[contract tests]
-    F --> H[integration tests]
-    F --> I[ADR when schema or behavior shifts]
+  A[User Story Slice] --> B[Specification]
+  B --> C[Plan]
+  C --> D[Data Model]
+  C --> E[Contracts]
+  D --> F[Implementation]
+  E --> F
+  F --> G[Contract Tests]
+  F --> H[Integration Tests]
+  F --> I[ADR Review]
 ```
 
 ## How The Problem Was Broken Into Features
