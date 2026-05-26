@@ -42,18 +42,18 @@ The source assignment defined four core responsibilities and three stretch direc
 
 ```mermaid
 flowchart LR
-    A[Original Interview Assignment] --> B[PO Lifecycle]
-    A --> C[Invoice Matching]
-    A --> D[GL Posting]
-    A --> E[Validation Rules]
-    A --> F[Stretch: Vendor Exposure]
-    A --> G[Stretch: Async Credit Alert]
-    B --> H[Implemented Feature 004]
-    C --> I[Implemented Feature 005]
-    D --> J[Implemented Feature 017]
-    E --> K[Implemented Across All Features]
-    F --> L[Implemented Feature 001]
-    G --> M[Implemented Feature 019]
+  A[Assignment] --> B[PO]
+  A --> C[Matching]
+  A --> D[Approval]
+  A --> E[Validation]
+  A --> F[Exposure]
+  A --> G[Credit Alert]
+  B --> H[Feature 004]
+  C --> I[Feature 005]
+  D --> J[Feature 017]
+  E --> K[All Features]
+  F --> L[Feature 001]
+  G --> M[Feature 019]
 ```
 
 ## Why Specification-Driven Development
@@ -72,15 +72,15 @@ That matters here because this API handles procurement commitments, invoice cont
 
 ```mermaid
 flowchart TD
-  A[User Story Slice] --> B[Specification]
-  B --> C[Plan]
-  C --> D[Data Model]
-  C --> E[Contracts]
-  D --> F[Implementation]
-  E --> F
-  F --> G[Contract Tests]
-  F --> H[Integration Tests]
-  F --> I[ADR Review]
+    A[Story] --> B[Spec]
+    B --> C[Plan]
+    C --> D[Model]
+    C --> E[Contract]
+    D --> F[Build]
+    E --> F
+    F --> G[Contract Test]
+    F --> H[Integration Test]
+    F --> I[ADR]
 ```
 
 ## How The Problem Was Broken Into Features
