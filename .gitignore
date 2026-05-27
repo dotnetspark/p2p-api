@@ -17,5 +17,5 @@ Thumbs.db
 *.swp
 .idea/
 .vscode/
-vendor_management.db
-vendor_management_test.db
+p2p.db
+p2p_test.db

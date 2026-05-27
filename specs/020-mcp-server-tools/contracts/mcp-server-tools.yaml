@@ -1,0 +1,638 @@
+version: 0.1.0
+server:
+  name: p2p-api
+  transport: streamable-http
+  endpoint: http://localhost:8000/mcp
+  stateless_http: true
+  json_response: true
+  description: >-
+    MCP tool surface for the current purchase-to-pay API. Tool payloads reuse the
+    existing REST request and response shapes, while the MCP layer adds discovery,
+    correlation propagation, and a shared structured result envelope.
+commonSchemas:
+  successEnvelope:
+    type: object
+    required:
+      - ok
+      - tool_name
+      - status_code
+      - correlation_id
+      - data
+    properties:
+      ok:
+        type: boolean
+        const: true
+      tool_name:
+        type: string
+      status_code:
+        type: integer
+      correlation_id:
+        type: string
+      data:
+        type: object
+  errorEnvelope:
+    type: object
+    required:
+      - ok
+      - tool_name
+      - status_code
+      - correlation_id
+      - error
+    properties:
+      ok:
+        type: boolean
+        const: false
+      tool_name:
+        type: string
+      status_code:
+        type: integer
+      correlation_id:
+        type: string
+      error:
+        $ref: "#/schemas/errorResponse"
+  errorResponse:
+    type: object
+    required:
+      - code
+      - category
+      - retryable
+      - message
+      - correlation_id
+    properties:
+      code:
+        type: string
+      category:
+        type: string
+      retryable:
+        type: boolean
+      message:
+        type: string
+      correlation_id:
+        type: string
+schemas:
+  vendorEligibilityResponse:
+    type: object
+    required:
+      - vendor_id
+      - vendor_name
+      - status
+      - payment_terms_days
+      - allowed
+      - next_action
+    properties:
+      vendor_id:
+        type: string
+      vendor_name:
+        type: string
+      status:
+        type: string
+      payment_terms_days:
+        type: integer
+      allowed:
+        type: boolean
+      next_action:
+        type: string
+  activeCreditAlertResponse:
+    type: object
+    required:
+      - alert_id
+      - vendor_id
+      - credit_check_id
+      - triggering_invoice_id
+      - outstanding_amount
+      - credit_limit
+      - percentage_consumed
+      - breached_at
+      - advisory_only
+    properties:
+      alert_id:
+        type: string
+      vendor_id:
+        type: string
+      credit_check_id:
+        type: string
+      triggering_invoice_id:
+        type: string
+      outstanding_amount:
+        type: string
+      credit_limit:
+        type: string
+      percentage_consumed:
+        type: string
+      breached_at:
+        type: string
+        format: date-time
+      advisory_only:
+        type: boolean
+  vendorExposureResponse:
+    type: object
+    required:
+      - vendor_id
+      - vendor_name
+      - as_of_timestamp
+      - outstanding_total_amount
+      - open_invoice_count
+      - included_invoice_statuses
+    properties:
+      vendor_id:
+        type: string
+      vendor_name:
+        type: string
+      as_of_timestamp:
+        type: string
+        format: date-time
+      outstanding_total_amount:
+        type: string
+      open_invoice_count:
+        type: integer
+      included_invoice_statuses:
+        type: array
+        items:
+          type: string
+      active_credit_alert:
+        anyOf:
+          - $ref: "#/schemas/activeCreditAlertResponse"
+          - type: "null"
+  purchaseOrderLineItemResponse:
+    type: object
+    required:
+      - po_line_item_id
+      - sku
+      - description
+      - qty_ordered
+      - qty_received
+      - qty_remaining
+    properties:
+      po_line_item_id:
+        type: string
+      sku:
+        type: string
+      description:
+        type: string
+      qty_ordered:
+        type: integer
+      qty_received:
+        type: integer
+      qty_remaining:
+        type: integer
+  goodsReceiptLineResponse:
+    type: object
+    required:
+      - po_line_item_id
+      - qty_received
+    properties:
+      po_line_item_id:
+        type: string
+      qty_received:
+        type: integer
+  goodsReceiptResponse:
+    type: object
+    required:
+      - receipt_id
+      - received_by
+      - received_at
+      - line_items
+    properties:
+      receipt_id:
+        type: string
+      received_by:
+        type: string
+      received_at:
+        type: string
+        format: date-time
+      line_items:
+        type: array
+        items:
+          $ref: "#/schemas/goodsReceiptLineResponse"
+  purchaseOrderResponse:
+    type: object
+    required:
+      - purchase_order_id
+      - vendor_id
+      - status
+      - created_at
+      - line_items
+      - receipts
+    properties:
+      purchase_order_id:
+        type: string
+      vendor_id:
+        type: string
+      status:
+        type: string
+      created_at:
+        type: string
+        format: date-time
+      line_items:
+        type: array
+        items:
+          $ref: "#/schemas/purchaseOrderLineItemResponse"
+      receipts:
+        type: array
+        items:
+          $ref: "#/schemas/goodsReceiptResponse"
+  invoiceResponse:
+    type: object
+    required:
+      - invoice_id
+      - vendor_id
+      - purchase_order_id
+      - invoice_number
+      - invoice_amount
+      - status
+      - last_match_outcome
+      - next_action
+      - credit_check_id
+    properties:
+      invoice_id:
+        type: string
+      vendor_id:
+        type: string
+      purchase_order_id:
+        type: string
+      invoice_number:
+        type: string
+      invoice_amount:
+        type: string
+      status:
+        type: string
+      last_match_outcome:
+        type: string
+      next_action:
+        type: string
+      credit_check_id:
+        anyOf:
+          - type: string
+          - type: "null"
+  openLineExposureResponse:
+    type: object
+    required:
+      - po_line_item_id
+      - sku
+      - qty_ordered
+      - qty_received
+      - qty_remaining
+      - unit_cost
+      - remaining_value
+    properties:
+      po_line_item_id:
+        type: string
+      sku:
+        type: string
+      qty_ordered:
+        type: integer
+      qty_received:
+        type: integer
+      qty_remaining:
+        type: integer
+      unit_cost:
+        type: string
+      remaining_value:
+        type: string
+  openExposureWarningResponse:
+    type: object
+    required:
+      - code
+      - message
+      - exposure_amount
+      - purchase_order_status
+      - remaining_order_value
+      - open_lines
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+      exposure_amount:
+        type: string
+      purchase_order_status:
+        type: string
+      remaining_order_value:
+        type: string
+      open_lines:
+        type: array
+        items:
+          $ref: "#/schemas/openLineExposureResponse"
+  invoiceMatchResponse:
+    type: object
+    required:
+      - invoice_id
+      - invoice_status
+      - match_outcome
+      - next_action
+    properties:
+      invoice_id:
+        type: string
+      invoice_status:
+        type: string
+      match_outcome:
+        type: string
+      next_action:
+        type: string
+      warning:
+        anyOf:
+          - $ref: "#/schemas/openExposureWarningResponse"
+          - type: "null"
+  glEntrySummaryResponse:
+    type: object
+    required:
+      - gl_entry_id
+      - account_code
+      - debit
+      - credit
+    properties:
+      gl_entry_id:
+        type: string
+      account_code:
+        type: string
+      debit:
+        type: string
+      credit:
+        type: string
+  invoiceApprovalResponse:
+    type: object
+    required:
+      - invoice_id
+      - invoice_status
+      - purchase_order_id
+      - generated_gl_entries
+      - approved_at
+      - next_action
+      - credit_check_id
+    properties:
+      invoice_id:
+        type: string
+      invoice_status:
+        type: string
+      purchase_order_id:
+        type: string
+      generated_gl_entries:
+        type: array
+        items:
+          $ref: "#/schemas/glEntrySummaryResponse"
+      approved_at:
+        type: string
+        format: date-time
+      next_action:
+        type: string
+      credit_check_id:
+        type: string
+  invoicePaymentResponse:
+    type: object
+    required:
+      - invoice_id
+      - invoice_status
+      - purchase_order_id
+      - purchase_order_status
+      - paid_at
+      - next_action
+    properties:
+      invoice_id:
+        type: string
+      invoice_status:
+        type: string
+      purchase_order_id:
+        type: string
+      purchase_order_status:
+        type: string
+      paid_at:
+        type: string
+        format: date-time
+      next_action:
+        type: string
+  creditCheckStatusResponse:
+    type: object
+    required:
+      - status
+      - breached
+      - alert_id
+    properties:
+      status:
+        type: string
+      breached:
+        anyOf:
+          - type: boolean
+          - type: "null"
+      alert_id:
+        anyOf:
+          - type: string
+          - type: "null"
+tools:
+  - name: get_vendor_eligibility
+    mutating: false
+    underlyingOperation:
+      method: GET
+      path: /vendors/{vendor_id}/eligibility
+    inputSchema:
+      type: object
+      required: [vendor_id]
+      properties:
+        vendor_id:
+          type: string
+        correlation_id:
+          type: string
+    successDataSchema: "#/schemas/vendorEligibilityResponse"
+    errorSchema: "#/commonSchemas/errorEnvelope"
+  - name: get_vendor_exposure
+    mutating: false
+    underlyingOperation:
+      method: GET
+      path: /vendors/{vendor_id}/exposure
+    inputSchema:
+      type: object
+      required: [vendor_id]
+      properties:
+        vendor_id:
+          type: string
+        correlation_id:
+          type: string
+    successDataSchema: "#/schemas/vendorExposureResponse"
+    errorSchema: "#/commonSchemas/errorEnvelope"
+  - name: create_purchase_order
+    mutating: true
+    underlyingOperation:
+      method: POST
+      path: /purchase-orders
+    inputSchema:
+      type: object
+      required: [vendor_id, line_items, idempotency_key]
+      properties:
+        vendor_id:
+          type: string
+        line_items:
+          type: array
+          items:
+            type: object
+            required: [sku, description, qty_ordered, unit_cost]
+            properties:
+              sku:
+                type: string
+              description:
+                type: string
+              qty_ordered:
+                type: integer
+              unit_cost:
+                type: string
+        idempotency_key:
+          type: string
+        correlation_id:
+          type: string
+    successDataSchema: "#/schemas/purchaseOrderResponse"
+    errorSchema: "#/commonSchemas/errorEnvelope"
+  - name: get_purchase_order
+    mutating: false
+    underlyingOperation:
+      method: GET
+      path: /purchase-orders/{purchase_order_id}
+    inputSchema:
+      type: object
+      required: [purchase_order_id]
+      properties:
+        purchase_order_id:
+          type: string
+        correlation_id:
+          type: string
+    successDataSchema: "#/schemas/purchaseOrderResponse"
+    errorSchema: "#/commonSchemas/errorEnvelope"
+  - name: submit_purchase_order
+    mutating: true
+    underlyingOperation:
+      method: POST
+      path: /purchase-orders/{purchase_order_id}/submit
+    inputSchema:
+      type: object
+      required: [purchase_order_id, idempotency_key]
+      properties:
+        purchase_order_id:
+          type: string
+        idempotency_key:
+          type: string
+        correlation_id:
+          type: string
+    successDataSchema: "#/schemas/purchaseOrderResponse"
+    errorSchema: "#/commonSchemas/errorEnvelope"
+  - name: receive_purchase_order
+    mutating: true
+    underlyingOperation:
+      method: POST
+      path: /purchase-orders/{purchase_order_id}/receive
+    inputSchema:
+      type: object
+      required: [purchase_order_id, received_by, line_items, idempotency_key]
+      properties:
+        purchase_order_id:
+          type: string
+        received_by:
+          type: string
+        line_items:
+          type: array
+          items:
+            type: object
+            required: [po_line_item_id, qty_received]
+            properties:
+              po_line_item_id:
+                type: string
+              qty_received:
+                type: integer
+        idempotency_key:
+          type: string
+        correlation_id:
+          type: string
+    successDataSchema: "#/schemas/purchaseOrderResponse"
+    errorSchema: "#/commonSchemas/errorEnvelope"
+  - name: create_invoice
+    mutating: true
+    underlyingOperation:
+      method: POST
+      path: /invoices
+    inputSchema:
+      type: object
+      required:
+        [
+          vendor_id,
+          purchase_order_id,
+          invoice_number,
+          invoice_amount,
+          idempotency_key,
+        ]
+      properties:
+        vendor_id:
+          type: string
+        purchase_order_id:
+          type: string
+        invoice_number:
+          type: string
+        invoice_amount:
+          type: string
+        idempotency_key:
+          type: string
+        correlation_id:
+          type: string
+    successDataSchema: "#/schemas/invoiceResponse"
+    errorSchema: "#/commonSchemas/errorEnvelope"
+  - name: match_invoice
+    mutating: true
+    underlyingOperation:
+      method: POST
+      path: /invoices/{invoice_id}/match
+    inputSchema:
+      type: object
+      required: [invoice_id, idempotency_key]
+      properties:
+        invoice_id:
+          type: string
+        idempotency_key:
+          type: string
+        correlation_id:
+          type: string
+    successDataSchema: "#/schemas/invoiceMatchResponse"
+    errorSchema: "#/commonSchemas/errorEnvelope"
+  - name: approve_invoice
+    mutating: true
+    underlyingOperation:
+      method: POST
+      path: /invoices/{invoice_id}/approve
+    inputSchema:
+      type: object
+      required: [invoice_id, idempotency_key]
+      properties:
+        invoice_id:
+          type: string
+        idempotency_key:
+          type: string
+        correlation_id:
+          type: string
+    successDataSchema: "#/schemas/invoiceApprovalResponse"
+    errorSchema: "#/commonSchemas/errorEnvelope"
+  - name: pay_invoice
+    mutating: true
+    underlyingOperation:
+      method: POST
+      path: /invoices/{invoice_id}/pay
+    inputSchema:
+      type: object
+      required: [invoice_id, idempotency_key]
+      properties:
+        invoice_id:
+          type: string
+        idempotency_key:
+          type: string
+        correlation_id:
+          type: string
+    successDataSchema: "#/schemas/invoicePaymentResponse"
+    errorSchema: "#/commonSchemas/errorEnvelope"
+  - name: get_credit_check
+    mutating: false
+    underlyingOperation:
+      method: GET
+      path: /credit-checks/{credit_check_id}
+    inputSchema:
+      type: object
+      required: [credit_check_id]
+      properties:
+        credit_check_id:
+          type: string
+        correlation_id:
+          type: string
+    successDataSchema: "#/schemas/creditCheckStatusResponse"
+    errorSchema: "#/commonSchemas/errorEnvelope"

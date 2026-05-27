@@ -186,8 +186,8 @@ class InvoicePaymentResponse(APIModel):
 
 class CreditCheckStatusResponse(APIModel):
     status: str
-    breached: bool | None
-    alert_id: str | None
+    breached: bool | None = None
+    alert_id: str | None = None
 
     @classmethod
     def from_domain(cls, result) -> "CreditCheckStatusResponse":

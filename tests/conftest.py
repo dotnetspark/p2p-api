@@ -13,7 +13,7 @@ import src.persistence.model_registry  # noqa: F401
 from src.persistence.seed.bootstrap import seed_initial_data
 
 
-TEST_DB_PATH = "./vendor_management_test.db"
+TEST_DB_PATH = "./p2p_test.db"
 
 
 @pytest.fixture(autouse=True)

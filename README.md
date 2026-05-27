@@ -107,6 +107,8 @@ timeline
 
 ## Implemented API Surface
 
+For a live MCP end-to-end workflow that exercises every published tool from a VS Code or Claude terminal, see [docs/mcp-e2e.md](docs/mcp-e2e.md).
+
 ### Vendor endpoints
 
 - `GET /vendors/{vendor_id}/eligibility`
