@@ -9,7 +9,7 @@
 Implement the invoice-registration and invoice-matching slice of the P2P API using
 the existing Python 3.14, FastAPI, SQLAlchemy 2.x, and SQLite service without
 changing version choices. The feature adds invoice registration against a specific
-vendor and purchase order, enforces duplicate detection on the composite
+vendor and purchase order that is already committed for fulfilment, enforces duplicate detection on the composite
 `(vendor_id, invoice_number)`, and evaluates invoice support against goods actually
 received rather than ordered value. Match outcomes are explicitly split into three
 contract states: hard reject with exact shortfall and next action (`422`), matched
@@ -36,7 +36,7 @@ with a fresh idempotency key.
 
 **Performance Goals**: Invoice register and match operations complete within 250 ms p95 on PoC-scale seeded data
 
-**Constraints**: Duplicate invoice detection is keyed by `(vendor_id, invoice_number)`; invoice registration must reject incoherent vendor and purchase-order combinations; new invoices must begin in `PENDING`; match evaluation must use receipt-backed value `sum(qty_received * unit_cost)`; match responses must distinguish hard reject (`422`), partial receipt warning (`202`), and clean match (`200`); every match response must include invoice amount, received value, signed difference, all-lines-fully-received indicator, and open-line details; a retried identical request with the same idempotency key must replay the original logical outcome; re-evaluating an invoice after new receipts requires a new idempotency key; correlation IDs and machine-readable error codes are mandatory; persistence-layer mocking is prohibited
+**Constraints**: Duplicate invoice detection is keyed by `(vendor_id, invoice_number)`; invoice registration must reject incoherent vendor and purchase-order combinations and must not allow draft purchase orders to receive invoices; new invoices must begin in `PENDING`; match evaluation must use receipt-backed value `sum(qty_received * unit_cost)`; match responses must distinguish hard reject (`422`), partial receipt warning (`202`), and clean match (`200`); every match response must include invoice amount, received value, signed difference, all-lines-fully-received indicator, and open-line details; a retried identical request with the same idempotency key must replay the original logical outcome; re-evaluating an invoice after new receipts requires a new idempotency key; correlation IDs and machine-readable error codes are mandatory; persistence-layer mocking is prohibited
 
 **Scale/Scope**: PoC scope for a mid-size distributor with tens to low hundreds of purchase orders and invoices, one invoice per purchase order in the broader lifecycle, and multiple rematch attempts as receipts accumulate
 

@@ -17,6 +17,7 @@ from src.core.errors import (
 from src.core.idempotency import build_idempotency_fingerprint
 from src.core.results import Result
 from src.domain.models.invoice import InvoiceCreateResult, build_pending_invoice
+from src.domain.models.purchase_order import RECEIVED, SUBMITTED
 from src.domain.services.vendor_credit_alert_service import VendorCreditAlertService
 from src.persistence.repositories.idempotency_repository import IdempotencyRepository
 from src.persistence.repositories.credit_check_repository import CreditCheckRepository
@@ -86,6 +87,15 @@ class InvoiceService:
             return Result.fail(purchase_order_not_found(purchase_order_id))
         if purchase_order.vendor_id != vendor_id:
             return Result.fail(invoice_vendor_po_mismatch(vendor_id, purchase_order_id))
+        if purchase_order.status not in {SUBMITTED, RECEIVED}:
+            return Result.fail(
+                purchase_order_invalid_state(
+                    purchase_order_id,
+                    purchase_order.status,
+                    "SUBMITTED or RECEIVED",
+                    "invoice registration",
+                )
+            )
         if purchase_order.invoice_id is not None:
             return Result.fail(
                 purchase_order_invalid_state(

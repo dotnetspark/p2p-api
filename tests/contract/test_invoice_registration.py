@@ -27,6 +27,26 @@ def _create_submitted_purchase_order(client, suffix: str, vendor_id: str = "V-10
     return purchase_order_id
 
 
+def _create_draft_purchase_order(client, suffix: str, vendor_id: str = "V-100") -> str:
+    create = client.post(
+        "/purchase-orders",
+        headers={"X-Correlation-ID": f"contract-invoice-po-draft-{suffix}", "Idempotency-Key": f"contract-invoice-po-draft-{suffix}"},
+        json={
+            "vendor_id": vendor_id,
+            "line_items": [
+                {
+                    "sku": f"SKU-DRAFT-{suffix}",
+                    "description": f"Draft Invoice Registration Item {suffix}",
+                    "qty_ordered": 100,
+                    "unit_cost": "10.00",
+                }
+            ],
+        },
+    )
+    assert create.status_code == 201
+    return create.json()["purchase_order_id"]
+
+
 def test_invoice_registration_contract_success(client):
     purchase_order_id = _create_submitted_purchase_order(client, "success")
 
@@ -129,6 +149,24 @@ def test_invoice_registration_contract_rejects_second_invoice_for_purchase_order
     assert first.status_code == 201
     assert second.status_code == 409
     assert second.json()["error"]["code"] == "PURCHASE_ORDER_INVALID_STATE"
+
+
+def test_invoice_registration_contract_rejects_draft_purchase_order(client):
+    purchase_order_id = _create_draft_purchase_order(client, "draft")
+
+    response = client.post(
+        "/invoices",
+        headers={"X-Correlation-ID": "contract-invoice-draft-po", "Idempotency-Key": "contract-invoice-draft-po"},
+        json={
+            "vendor_id": "V-100",
+            "purchase_order_id": purchase_order_id,
+            "invoice_number": "INV-DRAFT-PO-100",
+            "invoice_amount": "500.00",
+        },
+    )
+
+    assert response.status_code == 409
+    assert response.json()["error"]["code"] == "PURCHASE_ORDER_INVALID_STATE"
 
 
 def test_invoice_registration_contract_idempotent_replay(client):

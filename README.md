@@ -172,6 +172,7 @@ The interesting part of this repository is the business behavior, not the framew
 
 - inactive vendors cannot create new obligations
 - goods receipts cannot push cumulative received quantity above ordered quantity
+- invoice registration requires a purchase order already submitted for fulfilment
 - invoice matching uses received value, not ordered value
 - shortfalls return exact uncovered amount and next-step guidance
 - partial receipt can still produce a successful match, but only with warning context
