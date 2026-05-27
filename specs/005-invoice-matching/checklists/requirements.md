@@ -36,3 +36,5 @@
 - Specification resolves invoice shortfall, partial-exposure behavior, rematch
   semantics, and exact-equality warning versus clean-match behavior directly so
   implementation can proceed without clarification markers.
+- Invoice registration now explicitly requires the linked purchase order to be at
+  least `SUBMITTED`, closing the earlier ambiguity around draft-order invoicing.

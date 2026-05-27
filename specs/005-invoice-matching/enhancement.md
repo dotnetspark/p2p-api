@@ -73,3 +73,17 @@ verify inside the phased feature plan.
 - The next evolution would remove the one-to-one purchase-order invoice constraint,
   track cumulative invoiced quantity or value, and likely move matching from header
   totals toward line-level invoicing against purchase-order and receipt progress.
+
+### 5. Invoice registration now requires a committed purchase order
+
+The original assignment says invoices are linked to purchase orders, but it does not
+explicitly say whether a `DRAFT` purchase order is already ready to receive an
+invoice. This repository resolves that ambiguity by requiring the purchase order to
+be at least `SUBMITTED` before invoice registration is allowed.
+
+**Why**:
+
+- A draft purchase order is not yet a committed fulfilment request, so attaching an
+  invoice to it weakens the workflow's business meaning.
+- The rule keeps invoice registration aligned with the downstream approval flow,
+  where invoices represent payable obligations against already-committed purchasing.

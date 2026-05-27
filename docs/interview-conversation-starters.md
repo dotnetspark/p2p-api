@@ -63,14 +63,14 @@ Useful angle:
 - it preserves non-blocking behavior without adding infrastructure overhead
 - the durable `credit_check_id` keeps the public contract compatible with a future queue-backed implementation
 
-### 6a. Should invoice registration be allowed against a draft purchase order?
+### 6a. Why require a submitted purchase order before invoice registration?
 
 Useful angle:
 
-- the current service checks vendor and PO coherence plus one-invoice-per-PO, but it does not require the PO to be submitted first
-- the original assignment says invoices are linked to a PO, but it does not explicitly say draft POs are non-invoicable
-- in a stricter production workflow, requiring at least `SUBMITTED` would be easier to defend because draft usually means the obligation is not yet committed
-- that makes this a good prompt-fidelity versus domain-realism discussion rather than an unambiguous bug
+- the repo now requires the PO to be at least `SUBMITTED` before invoice registration
+- the original assignment said invoices are linked to a PO, but left draft-PO invoicing ambiguous
+- requiring submission makes the payable workflow easier to defend because draft usually means the obligation is not yet committed
+- the interesting discussion is now why that ambiguity was resolved this way and whether production systems should go further with line-level commitment controls
 
 ### Why should error codes describe business meaning instead of pseudo-states?
 

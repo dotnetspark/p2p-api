@@ -51,6 +51,28 @@ Expected result:
 - Invoice is stored once in `PENDING` status
 - Response includes invoice identifier, vendor, purchase order, invoice number, amount, and `next_action = REQUEST_MATCH`
 
+## Reject Invoice Registration Against A Draft Purchase Order
+
+```powershell
+curl -i -X POST http://localhost:8000/invoices \
+  -H "Content-Type: application/json" \
+  -H "X-Correlation-ID: invoice-create-draft-po" \
+  -H "Idempotency-Key: invoice-create-draft-po" \
+  -d '{
+    "vendor_id": "V-100",
+    "purchase_order_id": "PO-DRAFT-100",
+    "invoice_number": "INV-DRAFT-PO-1",
+    "invoice_amount": "550.00"
+  }'
+```
+
+Expected result:
+
+- HTTP 409
+- Error code is `PURCHASE_ORDER_INVALID_STATE`
+- The message explains that invoice registration requires a purchase order already in `SUBMITTED` or `RECEIVED`
+- No invoice is created
+
 ## Reject A Duplicate Vendor Invoice Reference
 
 ```powershell
@@ -153,6 +175,13 @@ Expected result:
 
 - Registration is rejected when the purchase order exists but belongs to a different vendor
 - Error code is `INVOICE_VENDOR_PO_MISMATCH`
+
+### Draft purchase order used for invoice registration
+
+Expected result:
+
+- Registration is rejected when the purchase order exists but is still in `DRAFT`
+- Error code is `PURCHASE_ORDER_INVALID_STATE`
 
 ### Conflicting idempotency-key reuse
 

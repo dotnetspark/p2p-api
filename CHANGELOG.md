@@ -8,6 +8,7 @@ The format is based on Keep a Changelog.
 
 ### Fixed
 
+- Invoice registration now rejects draft purchase orders and requires the linked purchase order to be at least `SUBMITTED` before an invoice can be created [#37]
 - Invoice approval GL posting now follows standard accounting by debiting expense and crediting `AP_CONTROL`, with specs, ADR notes, and interview docs updated to match [#35]
 - Interview edge-case notes now exclude topics already covered in conversation starters so the two prep documents stay distinct [#33]
 - Seed data now backs seeded invoices with matching purchase orders, GL integrity failures are non-retryable 500s, and approval response mapping removes a dead credit-check fallback [#31]

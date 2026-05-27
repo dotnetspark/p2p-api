@@ -40,7 +40,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "409":
-          description: Duplicate vendor invoice reference, vendor and purchase-order mismatch, or conflicting idempotency-key reuse
+          description: Duplicate vendor invoice reference, vendor and purchase-order mismatch, draft or otherwise non-invoicable purchase-order state, or conflicting idempotency-key reuse
           content:
             application/json:
               schema:

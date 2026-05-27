@@ -53,7 +53,8 @@ workflow state.
 
 1. **Given** an existing vendor and a specific purchase order, **When** the agent
    registers an invoice with an invoice reference and amount, **Then** the system
-   stores one invoice linked to that vendor and purchase order.
+   stores one invoice linked to that vendor and purchase order, provided the
+   purchase order has already been submitted for fulfilment.
 2. **Given** an invoice reference already exists for the same vendor, **When** the
    agent attempts to register the same vendor invoice reference again, **Then** the
    system rejects the duplicate registration and does not create a second invoice.
@@ -66,6 +67,9 @@ workflow state.
    approved.
 5. **Given** a valid invoice registration succeeds, **When** the system returns the
    result, **Then** it tells the agent that the next step is to request invoice matching.
+6. **Given** a purchase order is still in `DRAFT`, **When** the agent attempts to
+   register an invoice against it, **Then** the system rejects the request and leaves
+   invoice state unchanged.
 
 ---
 
@@ -143,6 +147,8 @@ unreceived quantity and verifying that the match succeeds with a non-blocking wa
   with the same idempotency key after the original request already succeeded?
 - How does the system respond when an invoice references a purchase order that exists
   but belongs to a different vendor than the invoice registration request?
+- How does the system respond when an invoice references a purchase order that exists
+  but is still in `DRAFT` rather than already committed for fulfilment?
 - How does the system distinguish a duplicate invoice reference for the same vendor
   from a transient persistence failure during invoice registration?
 - What happens when the invoice amount is exactly equal to the currently received
@@ -155,7 +161,8 @@ unreceived quantity and verifying that the match succeeds with a non-blocking wa
 ### Functional Requirements
 
 - **FR-001**: The system MUST allow a finance agent to register an invoice against a
-  specific vendor and a specific purchase order.
+  specific vendor and a purchase order that is already in `SUBMITTED` or `RECEIVED`
+  status.
 - **FR-002**: The system MUST reject invoice registration when the same invoice
   reference has already been registered for the same vendor.
 - **FR-003**: The system MUST allow the same invoice reference string to exist for
@@ -180,6 +187,9 @@ unreceived quantity and verifying that the match succeeds with a non-blocking wa
   order has been fully received and the invoice amount is supported.
 - **FR-012**: The system MUST reject invoice registration when vendor and
   purchase-order references do not represent a coherent relationship.
+- **FR-012a**: The system MUST reject invoice registration when the referenced
+  purchase order is still in `DRAFT` or any other state not yet eligible for
+  invoicing.
 - **FR-013**: The system MUST preserve idempotent behavior for invoice registration
   and invoice matching so retried identical requests do not create duplicate effects.
 - **FR-014**: The system MUST reject reuse of an idempotency key for a different
