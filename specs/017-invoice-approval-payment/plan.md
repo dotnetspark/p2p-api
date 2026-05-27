@@ -8,7 +8,8 @@
 
 Implement the post-match invoice lifecycle in the existing P2P API by adding two
 deterministic operations: invoice approval and invoice payment. Approval is allowed
-only from `MATCHED`, generates exactly two synchronous and balanced GL entries, and
+only from `MATCHED`, generates exactly two synchronous and balanced GL entries,
+debits the vendor-category-derived expense account, credits `AP_CONTROL`, and
 classifies the expense side through a hardcoded vendor-category account map with an
 `UNCLASSIFIED_EXPENSE` fallback. Payment is allowed only from `APPROVED`, marks the
 invoice `PAID`, and closes the linked purchase order using the existing PO lifecycle
@@ -96,7 +97,7 @@ tests/
 - The core persisted additions are invoice approval/payment timestamps and a new `GLEntry` entity linked to invoices.
 - The approval contract returns exactly two generated GL entry summaries so clients can validate balanced posting.
 - The payment contract returns both invoice and purchase-order terminal statuses so agents can confirm lifecycle completion without extra reads.
-- The feature remains aligned with the original assignment for approval and GL posting, while payment-triggered PO closure is documented as the requested extension for this slice.
+- The feature keeps approval and GL posting in core scope, but intentionally corrects the prompt's reversed journal direction to standard accounting while documenting payment-triggered PO closure as the requested extension for this slice.
 
 ## Complexity Tracking
 

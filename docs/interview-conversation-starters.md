@@ -114,7 +114,7 @@ Useful angle:
 
 ### 9. GL posting direction: prompt fidelity vs accounting correctness
 
-This is a strong conversation starter because the original assignment explicitly says:
+This started as a strong conversation starter because the original assignment explicitly says:
 
 - Debit `AP Control`
 - Credit `Expense`
@@ -126,9 +126,9 @@ Standard accrual accounting would normally reverse that direction when recognizi
 
 Useful angle:
 
-- the repo currently follows the assignment literally
-- that choice optimizes for prompt fidelity during the exercise
-- in a production design review, you would normally call out the accounting discrepancy and decide whether to preserve the prompt or correct the behavior with explicit documentation
+- the repo now corrects the prompt instead of following it literally
+- that choice is grounded in the constitution's requirement for financial correctness
+- the important design point is not just spotting the discrepancy, but documenting the intentional deviation clearly in specs and ADRs
 
 ### 10. When should you follow the prompt literally, and when should you deviate?
 
@@ -173,7 +173,7 @@ Strong answers include:
 
 - replace in-process background tasks with a queue-backed worker
 - formalize vendor classification instead of name heuristics
-- revisit GL posting direction for accounting correctness
+- extend accounting coverage beyond the current two-line approval journal when the domain requires accrual variations
 - add richer observability and trace correlation across the full workflow
 
 ### 14. What is the strongest design decision in the repo?

@@ -15,6 +15,11 @@ The project constitution requires schema-affecting implementation work to be bac
 by a feature plan, regenerated data model, and an ADR that explains the rationale and
 scope of the change.
 
+The original assignment's GL example also reverses the usual accounting direction by
+saying approval should debit `AP Control` and credit `Expense`. The repository treats
+that as a prompt defect rather than a business rule because the constitution makes
+financial correctness non-negotiable.
+
 ## Decision
 
 The implementation will extend the current schema in the following way:
@@ -34,6 +39,8 @@ The implementation will extend the current schema in the following way:
 ### Positive
 
 - Approval can persist exactly two GL rows and replay them deterministically.
+- Approval now uses standard accrual accounting direction by debiting expense and
+  crediting `AP_CONTROL`.
 - Payment can persist a terminal invoice state and support PO closure.
 - The feature remains within the current FastAPI and SQLAlchemy architecture.
 - Vendor schema does not need to widen during this slice.
@@ -56,3 +63,10 @@ artifacts beyond what is necessary to complete the approval and payment workflow
 
 Rejected because ledger rows are first-class accounting records and should be stored
 explicitly rather than encoded into a snapshot payload.
+
+### 3. Follow the prompt's GL direction literally
+
+Rejected because debiting accounts payable control and crediting expense would invert
+the accounting meaning of invoice recognition. The repository keeps the prompt as a
+historical source document but corrects the implementation and owned specs to standard
+accounting.

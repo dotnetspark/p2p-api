@@ -7,7 +7,7 @@ from src.api.dependencies.error_handlers import ERROR_STATUS_BY_CODE
 from src.api.schemas.invoice import InvoiceApprovalResponse
 from src.core.errors import GL_ENTRIES_MISSING, GL_ENTRIES_UNBALANCED, gl_entries_missing, gl_entries_unbalanced
 from src.domain.models.invoice import GLEntry, InvoiceApprovalResult
-from src.domain.rules.gl_posting import gl_entries_are_balanced
+from src.domain.rules.gl_posting import build_balanced_gl_entries, gl_entries_are_balanced
 from src.persistence.database import get_session_factory
 from src.persistence.models.purchase_order import PurchaseOrderRow
 
@@ -37,6 +37,23 @@ def test_gl_entries_are_balanced_rejects_empty_list() -> None:
     assert gl_entries_are_balanced([]) is False
 
 
+def test_build_balanced_gl_entries_uses_standard_accounting_direction() -> None:
+    entries = build_balanced_gl_entries(
+        invoice_id="INV-1",
+        invoice_amount=Decimal("100.00"),
+        expense_account_code="EXPENSE_BUILDING_SUPPLY",
+        posted_at=datetime.now(UTC),
+    )
+
+    expense_entry = next(entry for entry in entries if entry.account_code == "EXPENSE_BUILDING_SUPPLY")
+    ap_control_entry = next(entry for entry in entries if entry.account_code == "AP_CONTROL")
+
+    assert expense_entry.debit == Decimal("100.00")
+    assert expense_entry.credit == Decimal("0.00")
+    assert ap_control_entry.debit == Decimal("0.00")
+    assert ap_control_entry.credit == Decimal("100.00")
+
+
 def test_gl_integrity_errors_are_non_retryable_and_map_to_500() -> None:
     missing_error = gl_entries_missing("INV-1")
     unbalanced_error = gl_entries_unbalanced("INV-1")
@@ -54,8 +71,8 @@ def test_invoice_approval_response_uses_credit_check_id_directly() -> None:
         invoice_status="APPROVED",
         purchase_order_id="PO-1",
         generated_gl_entries=[
-            GLEntry(id="GLE-1", invoice_id="INV-1", account_code="AP_CONTROL", debit=Decimal("100.00"), credit=Decimal("0.00"), posted_at=posted_at),
-            GLEntry(id="GLE-2", invoice_id="INV-1", account_code="EXPENSE", debit=Decimal("0.00"), credit=Decimal("100.00"), posted_at=posted_at),
+            GLEntry(id="GLE-1", invoice_id="INV-1", account_code="EXPENSE", debit=Decimal("100.00"), credit=Decimal("0.00"), posted_at=posted_at),
+            GLEntry(id="GLE-2", invoice_id="INV-1", account_code="AP_CONTROL", debit=Decimal("0.00"), credit=Decimal("100.00"), posted_at=posted_at),
         ],
         approved_at=posted_at,
         next_action="MARK_PAID",

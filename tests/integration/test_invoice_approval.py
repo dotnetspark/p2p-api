@@ -82,6 +82,12 @@ def test_invoice_approval_integration_persists_balanced_gl_entries(client):
         gl_entries = session.query(GLEntryRow).filter(GLEntryRow.invoice_id == invoice_id).order_by(GLEntryRow.id).all()
         assert len(gl_entries) == 2
         assert sum(entry.debit for entry in gl_entries) == sum(entry.credit for entry in gl_entries)
+        ap_control_entry = next(entry for entry in gl_entries if entry.account_code == "AP_CONTROL")
+        expense_entry = next(entry for entry in gl_entries if entry.account_code == "EXPENSE_BUILDING_SUPPLY")
+        assert str(ap_control_entry.debit) == "0.00"
+        assert str(ap_control_entry.credit) == "1000.00"
+        assert str(expense_entry.debit) == "1000.00"
+        assert str(expense_entry.credit) == "0.00"
     finally:
         session.close()
 

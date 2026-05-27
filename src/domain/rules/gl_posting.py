@@ -49,7 +49,7 @@ def build_balanced_gl_entries(
         GLEntry(
             id=f"GLE-{uuid4().hex[:8].upper()}",
             invoice_id=invoice_id,
-            account_code=AP_CONTROL_ACCOUNT,
+            account_code=expense_account_code,
             debit=normalized_amount,
             credit=Decimal("0.00"),
             posted_at=posting_time,
@@ -57,7 +57,7 @@ def build_balanced_gl_entries(
         GLEntry(
             id=f"GLE-{uuid4().hex[:8].upper()}",
             invoice_id=invoice_id,
-            account_code=expense_account_code,
+            account_code=AP_CONTROL_ACCOUNT,
             debit=Decimal("0.00"),
             credit=normalized_amount,
             posted_at=posting_time,

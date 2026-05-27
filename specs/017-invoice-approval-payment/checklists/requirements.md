@@ -31,6 +31,6 @@
 
 ## Notes
 
-- Approval and GL posting are aligned directly with the original assignment's GL Posting section.
+- Approval and GL posting remain core assignment scope, but the repository corrects the prompt's reversed debit-credit example to standard accounting by debiting expense and crediting `AP_CONTROL`.
 - Payment and purchase-order closure are intentionally specified as the next lifecycle step requested for this repository after approval.
 - The current one-invoice-per-purchase-order repository scope remains an assumption for this feature.

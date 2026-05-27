@@ -35,8 +35,8 @@ Expected result:
 - HTTP 200
 - Invoice status becomes `APPROVED`
 - Response contains exactly two generated GL entry identifiers
-- One GL entry represents the payable obligation using `AP_CONTROL`
-- One GL entry represents the expense using the repo's deterministic vendor
+- One GL entry credits `AP_CONTROL` for the approved invoice amount
+- One GL entry debits the repo's deterministic vendor
   classification rule, for example `EXPENSE_BUILDING_SUPPLY` for `ACME Building Supply`,
   or `UNCLASSIFIED_EXPENSE` when no category rule matches
 - Response tells the agent that the next step is to mark the invoice paid
