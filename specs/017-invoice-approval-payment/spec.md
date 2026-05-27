@@ -106,9 +106,10 @@ invalid pre-approval payment attempts are rejected.
 - **FR-003**: When an invoice is approved, the system MUST transition the invoice to
   an approved state.
 - **FR-004**: When an invoice is approved, the system MUST generate one accounting
-  entry representing the payable obligation.
+  entry representing the payable obligation as a credit to `AP_CONTROL`.
 - **FR-005**: When an invoice is approved, the system MUST generate one accounting
-  entry representing the expense.
+  entry representing the expense as a debit to the vendor-category-derived expense
+  account.
 - **FR-006**: The system MUST classify the expense entry using vendor type or vendor
   category business rules.
 - **FR-007**: The system MUST ensure the accounting entries created by approval are

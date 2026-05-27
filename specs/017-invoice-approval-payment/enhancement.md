@@ -23,7 +23,21 @@ in `MATCHED` status. This feature keeps that business slice intact.
 
 ## Deviations From The Assignment
 
-### 2. Payment and automatic PO closure are added beyond the original assignment
+### 2. GL posting direction is corrected to standard accounting
+
+The original assignment's GL Posting section reverses the usual direction of the
+approval journal by saying to debit `AP Control` and credit `Expense`. This
+repository intentionally corrects that example and instead debits expense while
+crediting `AP_CONTROL`.
+
+**Why**:
+
+- The constitution makes financial correctness non-negotiable, so a prompt example
+  that inverts the payable and expense sides should not be implemented literally.
+- The machine-first contract still remains deterministic because the correction does
+  not add ambiguity; it only fixes the accounting meaning of the two generated rows.
+
+### 3. Payment and automatic PO closure are added beyond the original assignment
 
 The original assignment stops at invoice approval and GL posting. This repository adds
 `POST /invoices/{id}/pay` and closes the linked purchase order when payment succeeds
@@ -36,7 +50,7 @@ so the post-match lifecycle can complete inside the repo's phased feature sequen
 - The earlier purchase-order feature already acknowledged `CLOSED` as a future state,
   so payment-driven closure is the natural follow-on capability.
 
-### 3. Expense-account selection is made deterministic with a hardcoded mapping and fallback
+### 4. Expense-account selection is made deterministic with a hardcoded mapping and fallback
 
 The original assignment says the expense side of the GL posting should be based on
 vendor category, but it does not define how that category is resolved or what should
@@ -58,7 +72,7 @@ using a hardcoded category-to-account map with an unclassified fallback.
 - If no rule matches the current vendor data, approval falls back to
   `UNCLASSIFIED_EXPENSE` rather than failing.
 
-### 4. Payment completion is modeled as business completion, not treasury integration
+### 5. Payment completion is modeled as business completion, not treasury integration
 
 The original assignment does not define a payment operation at all. This repository
 therefore models payment as an internal business completion step rather than a bank or
@@ -71,7 +85,7 @@ AP disbursement integration.
 - This keeps the enhancement focused on lifecycle completion while preserving a clean
   path for future external payment integration if needed.
 
-### 5. The one-invoice-per-PO PoC constraint remains in force for payment-driven closure
+### 6. The one-invoice-per-PO PoC constraint remains in force for payment-driven closure
 
 The original assignment requires invoices to be linked to purchase orders, but it does
 not require a strict one-to-one invoice-to-PO relationship. This repository continues

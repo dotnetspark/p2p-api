@@ -53,8 +53,8 @@ approved to paid.
 
 - Exactly two `GLEntry` rows are created for each successful approval
 - The two entries must balance to the invoice amount
-- One entry must post to `AP_CONTROL`
-- One entry must post to the vendor-category-derived expense account or the
+- One entry must credit `AP_CONTROL`
+- One entry must debit the vendor-category-derived expense account or the
   unclassified fallback account
 - No additional GL entries are created when the approval request is replayed with the
   same idempotency key

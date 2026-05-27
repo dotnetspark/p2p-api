@@ -259,6 +259,12 @@ Mutating endpoints use idempotency keys and fingerprint validation so retries ei
 
 Approval uses explicit vendor-name-based classification rules and a fallback `UNCLASSIFIED_EXPENSE` account so approval does not collapse on missing master data.
 
+### 6. Standard-accounting GL direction
+
+The original interview prompt inverted the approval journal example. The repository
+corrects that by debiting the expense account and crediting `AP_CONTROL`, while
+preserving the rest of the prompt's approval workflow.
+
 ## Seed Data For Local Exploration
 
 On startup, the app seeds a small, useful dataset when the database is empty:

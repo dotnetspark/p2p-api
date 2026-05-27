@@ -39,7 +39,7 @@ class GLEntryRepository:
         return sorted(
             gl_entries,
             key=lambda entry: (
-                entry.account_code != AP_CONTROL_ACCOUNT,
+                entry.account_code == AP_CONTROL_ACCOUNT,
                 entry.account_code,
                 entry.id,
             ),

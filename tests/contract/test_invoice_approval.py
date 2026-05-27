@@ -92,10 +92,10 @@ def test_invoice_approval_contract_success_and_replay(client):
     assert {entry["account_code"] for entry in body["generated_gl_entries"]} == {"AP_CONTROL", "EXPENSE_BUILDING_SUPPLY"}
     ap_control_entry = next(entry for entry in body["generated_gl_entries"] if entry["account_code"] == "AP_CONTROL")
     expense_entry = next(entry for entry in body["generated_gl_entries"] if entry["account_code"] == "EXPENSE_BUILDING_SUPPLY")
-    assert ap_control_entry["debit"] == "1000.00"
-    assert ap_control_entry["credit"] == "0.00"
-    assert expense_entry["debit"] == "0.00"
-    assert expense_entry["credit"] == "1000.00"
+    assert ap_control_entry["debit"] == "0.00"
+    assert ap_control_entry["credit"] == "1000.00"
+    assert expense_entry["debit"] == "1000.00"
+    assert expense_entry["credit"] == "0.00"
 
 
 def test_invoice_approval_contract_rejects_invalid_invoice_state(client):
