@@ -8,7 +8,7 @@ from functools import lru_cache
 @dataclass(frozen=True)
 class Settings:
     app_name: str = "p2p-api"
-    database_url: str = "sqlite:///./vendor_management.db"
+    database_url: str = "sqlite:///./p2p.db"
     echo_sql: bool = False
     seed_on_startup: bool = True
 

@@ -8,7 +8,7 @@ For more details on the original assignment, read `original_assignment.md`.
 <!-- SPECKIT START -->
 
 For the active feature's technologies, project structure, shell commands, and
-implementation details, read `specs/019-vendor-credit-alert/plan.md`.
+implementation details, read `specs/020-mcp-server-tools/plan.md`.
 
 <!-- SPECKIT END -->
 

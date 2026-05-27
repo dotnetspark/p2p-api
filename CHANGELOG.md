@@ -6,6 +6,10 @@ The format is based on Keep a Changelog.
 
 ## [Unreleased]
 
+### Added
+
+- Mounted an MCP server that exposes the purchase-to-pay workflow as agent-callable tools with structured success/error envelopes, idempotent mutation support, and end-to-end MCP contract/integration coverage [#39]
+
 ### Fixed
 
 - Invoice registration now rejects draft purchase orders and requires the linked purchase order to be at least `SUBMITTED` before an invoice can be created [#37]
