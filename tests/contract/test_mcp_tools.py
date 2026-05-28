@@ -5,6 +5,23 @@ import pytest
 from tests.mcp_test_utils import is_error, mcp_client_session, structured_content
 
 
+def _prompt_texts(prompt_result) -> list[str]:
+    texts: list[str] = []
+    for message in prompt_result.messages:
+        content = message.content
+        if hasattr(content, "text"):
+            texts.append(content.text)
+    return texts
+
+
+def _resource_texts(resource_result) -> list[str]:
+    texts: list[str] = []
+    for content in resource_result.contents:
+        if hasattr(content, "text"):
+            texts.append(content.text)
+    return texts
+
+
 async def _create_approved_invoice(session, suffix: str) -> tuple[str, str]:
     create_po = await session.call_tool(
         "create_purchase_order",
@@ -97,6 +114,57 @@ async def test_mcp_tools_contract_lists_expected_tools():
 
     create_tool = next(tool for tool in tools.tools if tool.name == "create_purchase_order")
     assert create_tool.inputSchema["required"] == ["vendor_id", "line_items", "idempotency_key"]
+
+
+@pytest.mark.anyio
+async def test_mcp_contract_lists_expected_prompts_and_resources():
+    async with mcp_client_session() as session:
+        prompts = await session.list_prompts()
+        resources = await session.list_resources()
+
+    prompt_names = {prompt.name for prompt in prompts.prompts}
+    assert {
+        "guided_purchase_to_pay",
+        "prepare_purchase_order_with_confirmation",
+        "prepare_invoice_with_preconditions",
+        "resolve_blocked_p2p_action",
+    }.issubset(prompt_names)
+
+    resource_uris = {str(resource.uri) for resource in resources.resources}
+    assert {
+        "docs://p2p-api/mcp-e2e",
+        "docs://p2p-api/mcp-quickstart",
+        "contracts://p2p-api/mcp-server-tools",
+        "examples://p2p-api/create-purchase-order",
+        "examples://p2p-api/create-invoice",
+        "examples://p2p-api/full-p2p-workflow",
+    }.issubset(resource_uris)
+
+
+@pytest.mark.anyio
+async def test_mcp_guided_purchase_to_pay_prompt_returns_workflow_and_hitl_constraints():
+    async with mcp_client_session() as session:
+        prompt = await session.get_prompt("guided_purchase_to_pay", {"vendor_id": "V-100"})
+
+    texts = _prompt_texts(prompt)
+    assert any("get_vendor_eligibility" in text for text in texts)
+    assert any("pay_invoice" in text for text in texts)
+    assert any("ask for confirmation" in text.lower() for text in texts)
+    assert any("contracts://p2p-api/mcp-server-tools" in text for text in texts)
+
+
+@pytest.mark.anyio
+async def test_mcp_resources_read_docs_and_examples():
+    async with mcp_client_session() as session:
+        contract = await session.read_resource("contracts://p2p-api/mcp-server-tools")
+        example = await session.read_resource("examples://p2p-api/full-p2p-workflow")
+
+    contract_text = "\n".join(_resource_texts(contract))
+    example_text = "\n".join(_resource_texts(example))
+    assert "server:" in contract_text
+    assert "endpoint:" in contract_text
+    assert '"create_purchase_order"' in example_text
+    assert '"Ask for confirmation before each mutating tool call."' in example_text
 
 
 @pytest.mark.anyio

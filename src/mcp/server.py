@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from mcp.server.fastmcp import FastMCP
 
+from src.mcp.prompts import register_prompts
+from src.mcp.resources import register_resources
 from src.mcp.tools import (
     approve_invoice_tool,
     create_invoice_tool,
@@ -40,6 +42,9 @@ def build_mcp_server() -> FastMCP:
     mcp.add_tool(approve_invoice_tool, name="approve_invoice")
     mcp.add_tool(pay_invoice_tool, name="pay_invoice")
     mcp.add_tool(get_credit_check_tool, name="get_credit_check")
+
+    register_prompts(mcp)
+    register_resources(mcp)
 
     return mcp
 

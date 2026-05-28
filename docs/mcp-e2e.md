@@ -20,6 +20,27 @@ The E2E flow covers these tools:
 - `approve_invoice`
 - `pay_invoice`
 
+Compatible MCP clients should also discover these additional server surfaces:
+
+- prompts for guided, HITL-safe purchase-to-pay workflows
+- resources for docs, contracts, and example payloads
+
+Current prompt names:
+
+- `guided_purchase_to_pay`
+- `prepare_purchase_order_with_confirmation`
+- `prepare_invoice_with_preconditions`
+- `resolve_blocked_p2p_action`
+
+Current resource URIs:
+
+- `docs://p2p-api/mcp-e2e`
+- `docs://p2p-api/mcp-quickstart`
+- `contracts://p2p-api/mcp-server-tools`
+- `examples://p2p-api/create-purchase-order`
+- `examples://p2p-api/create-invoice`
+- `examples://p2p-api/full-p2p-workflow`
+
 ## Prerequisites
 
 - Open a terminal in the repo root.
@@ -117,3 +138,157 @@ If you have an older local `p2p.db`, delete it and restart the server so the cur
 ### MCP client cannot connect
 
 Confirm the app is running and that `http://localhost:8000/mcp/` responds before running the script.
+
+## Natural-Language Test Flow
+
+Use this section when you want to test the MCP server manually, in plain language, without relying on the helper script. The order below covers every published MCP function.
+
+### 1. Check that the vendor is eligible
+
+User prompt: show me eligibility for vendor V-100
+You should see a call to `get_vendor_eligibility` for vendor `V-100`.
+
+Expected result:
+
+- `ok = true`
+- `status_code = 200`
+- the payload shows that the vendor is active and allowed for new obligations
+
+### 2. Check current vendor exposure
+
+User prompt: show me exposure for vendor V-100
+You should see a call to `get_vendor_exposure` for vendor `V-100`.
+
+Expected result:
+
+- `ok = true`
+- `status_code = 200`
+- the payload shows the vendor's current open exposure before any new purchase order or invoice is created
+
+### 3. Create a purchase order
+
+Call `create_purchase_order` with vendor `V-100`, one line item, an `idempotency_key`, and a `correlation_id`.
+
+Expected result:
+
+- `ok = true`
+- `status_code = 201`
+- the payload includes a new `purchase_order_id`
+- the purchase order status is `DRAFT`
+- the line item includes a `po_line_item_id`
+
+Keep both `purchase_order_id` and `po_line_item_id` for the next steps.
+
+### 4. Read the purchase order back
+
+Call `get_purchase_order` using the new `purchase_order_id`.
+
+Expected result:
+
+- `ok = true`
+- `status_code = 200`
+- the returned purchase order matches the one you just created
+- the purchase order is still in `DRAFT`
+
+### 5. Submit the purchase order
+
+Call `submit_purchase_order` with the `purchase_order_id`, plus a fresh `idempotency_key` and `correlation_id`.
+
+Expected result:
+
+- `ok = true`
+- `status_code = 200`
+- the purchase order status changes to `SUBMITTED`
+
+### 6. Receive the goods
+
+Call `receive_purchase_order` with the `purchase_order_id`, `received_by`, the saved `po_line_item_id`, the quantity received, and a fresh `idempotency_key`.
+
+Expected result:
+
+- `ok = true`
+- `status_code = 200`
+- the purchase order shows receipt progress
+- the receipt is attached in the `receipts` array
+- the line item shows the quantity received and remaining quantity
+
+### 7. Create an invoice
+
+Call `create_invoice` with vendor `V-100`, the `purchase_order_id`, a new invoice number, the invoice amount, and a fresh `idempotency_key`.
+
+Expected result:
+
+- `ok = true`
+- `status_code = 201`
+- the payload includes a new `invoice_id`
+- the invoice is created in its initial status
+- the payload includes a `credit_check_id`
+
+Keep both `invoice_id` and `credit_check_id` for the next steps.
+
+### 8. Check the credit-check status
+
+Call `get_credit_check` with the `credit_check_id` returned from invoice creation.
+
+Expected result:
+
+- `ok = true`
+- `status_code = 200`
+- the payload shows a valid credit-check status such as `PENDING` or `COMPLETED`
+
+### 9. Match the invoice
+
+Call `match_invoice` with the `invoice_id` and a fresh `idempotency_key`.
+
+Expected result:
+
+- `ok = true`
+- `status_code = 200`
+- the invoice is matched successfully
+- the payload exposes the match outcome and next action
+
+### 10. Approve the invoice
+
+Call `approve_invoice` with the `invoice_id` and a fresh `idempotency_key`.
+
+Expected result:
+
+- `ok = true`
+- `status_code = 200`
+- the invoice status changes to `APPROVED`
+- the payload includes the generated GL entries
+- the payload includes a `credit_check_id` for the approval path
+
+### 11. Pay the invoice
+
+Call `pay_invoice` with the `invoice_id` and a fresh `idempotency_key`.
+
+Expected result:
+
+- `ok = true`
+- `status_code = 200`
+- the invoice status changes to `PAID`
+- the linked purchase order status changes to `CLOSED`
+
+## Manual Completion Checklist
+
+At the end of the manual flow, you should have validated every MCP function:
+
+- `get_vendor_eligibility`
+- `get_vendor_exposure`
+- `create_purchase_order`
+- `get_purchase_order`
+- `submit_purchase_order`
+- `receive_purchase_order`
+- `create_invoice`
+- `get_credit_check`
+- `match_invoice`
+- `approve_invoice`
+- `pay_invoice`
+
+You can also validate MCP discovery surfaces directly in a client that supports them:
+
+- list prompts and confirm the four prompt names above are present
+- get `guided_purchase_to_pay` and confirm it instructs the client to pause for confirmation before mutating tools
+- list resources and confirm the docs, contract, and example URIs above are present
+- read `contracts://p2p-api/mcp-server-tools` and `examples://p2p-api/full-p2p-workflow`
