@@ -6,43 +6,48 @@ from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.prompts.base import AssistantMessage, UserMessage
 from pydantic import Field
 
+from src.mcp.constants import URI_CONTRACT, URI_EXAMPLE_CREATE_INVOICE, URI_EXAMPLE_CREATE_PO, URI_EXAMPLE_FULL_WORKFLOW
+
 
 def register_prompts(mcp: FastMCP) -> None:
     @mcp.prompt(
         name="guided_purchase_to_pay",
         title="Guided Purchase-To-Pay Workflow",
-        description="Walk the client through the full purchase-to-pay sequence without silently advancing past human approval points.",
+        description="Walk the user through the full purchase-to-pay cycle, pausing for confirmation before every data-changing step.",
     )
     def guided_purchase_to_pay(
         vendor_id: Annotated[str, Field(description="Vendor identifier to use for the workflow")],
     ) -> list[AssistantMessage | UserMessage]:
         return [
             UserMessage(
-                f"Guide me through the purchase-to-pay workflow for vendor {vendor_id}. "
-                "Do not skip steps or chain together mutating actions without confirmation."
+                f"Walk me through the full purchase-to-pay cycle for vendor {vendor_id}, "
+                "step by step, and pause for my go-ahead before making any changes."
             ),
             AssistantMessage(
-                "Use this sequence: 1) get_vendor_eligibility, 2) get_vendor_exposure, "
-                "3) create_purchase_order, 4) get_purchase_order, 5) submit_purchase_order, "
-                "6) receive_purchase_order, 7) create_invoice, 8) get_credit_check, "
-                "9) match_invoice, 10) approve_invoice, 11) pay_invoice."
+                f"I'll guide you through the complete purchase-to-pay process for vendor {vendor_id}. "
+                "We'll start by verifying that the vendor is active and eligible, then review their current "
+                "financial exposure. Once confirmed, I'll help you raise a purchase order, submit it, record "
+                "goods receipt when the items arrive, and then process an invoice through credit assessment, "
+                "three-way matching, approval, and final payment. "
+                "I'll pause and explain exactly what I'm about to do before every step that changes data, "
+                "and wait for your confirmation before proceeding."
             ),
             AssistantMessage(
-                "Before every mutating tool call, explain the intended action, ask for confirmation, "
-                "and wait. Keep the current identifiers in context: purchase_order_id, po_line_item_id, "
-                "invoice_id, and credit_check_id."
+                "I'll keep the key identifiers in context throughout — purchase order, line item, invoice, "
+                "and credit check references — so you don't need to track them manually."
             ),
             AssistantMessage(
-                "If a step is blocked, explain the business precondition that failed, propose the next valid tool, "
-                "and refer to these resources when useful: docs://p2p-api/mcp-e2e, "
-                "contracts://p2p-api/mcp-server-tools, and examples://p2p-api/full-p2p-workflow."
+                "If a step is blocked by a business rule I'll explain what precondition wasn't met and "
+                "suggest the next valid action rather than retrying automatically. "
+                f"For the formal tool contract or a worked end-to-end example, I can pull up "
+                f"{URI_CONTRACT} or {URI_EXAMPLE_FULL_WORKFLOW}."
             ),
         ]
 
     @mcp.prompt(
         name="prepare_purchase_order_with_confirmation",
         title="Prepare Purchase Order With Confirmation",
-        description="Gather the fields needed for create_purchase_order and enforce a confirmation step before mutation.",
+        description="Collect purchase order details from the user and enforce a confirmation step before raising the draft.",
     )
     def prepare_purchase_order_with_confirmation(
         vendor_id: Annotated[str, Field(description="Vendor identifier for the purchase order")],
@@ -53,27 +58,31 @@ def register_prompts(mcp: FastMCP) -> None:
     ) -> list[AssistantMessage | UserMessage]:
         return [
             UserMessage(
-                f"Prepare a draft purchase order for vendor {vendor_id} with {qty_ordered} units of {sku} "
-                f"described as '{description}' at {unit_cost} each."
+                f"I'd like to place an order for {qty_ordered} units of {sku} — '{description}' "
+                f"at {unit_cost} each — with vendor {vendor_id}."
             ),
             AssistantMessage(
-                "First confirm vendor readiness with get_vendor_eligibility and optionally get_vendor_exposure "
-                "if the user needs current liability context."
+                f"Before I create anything, let me check that vendor {vendor_id} is currently active "
+                "and eligible to receive new obligations. I may also review their outstanding exposure "
+                "if you'd like that context first."
             ),
             AssistantMessage(
-                "Before calling create_purchase_order, restate the payload, confirm the user wants to create it now, "
-                "and ensure an idempotency_key is present. After creation, retain purchase_order_id and po_line_item_id "
-                "for later submit and receive steps."
+                f"Once eligibility is confirmed, I'll summarise the order — vendor {vendor_id}, "
+                f"{qty_ordered} × {sku} ({description}) at {unit_cost} each — and ask for your "
+                "confirmation before raising the draft. I'll include a unique idempotency key so the "
+                "request is safe to retry. After creation I'll keep the purchase order ID and line item ID "
+                "ready for the submit and receive steps."
             ),
             AssistantMessage(
-                "If the user asks for an example payload, read examples://p2p-api/create-purchase-order."
+                f"If you'd like to see a concrete example of a purchase order payload before we proceed, "
+                f"I can pull one up from {URI_EXAMPLE_CREATE_PO}."
             ),
         ]
 
     @mcp.prompt(
         name="prepare_invoice_with_preconditions",
         title="Prepare Invoice With Preconditions",
-        description="Guide invoice creation only after the linked purchase order satisfies the required state.",
+        description="Guide invoice creation only after confirming the linked purchase order is in a valid state.",
     )
     def prepare_invoice_with_preconditions(
         vendor_id: Annotated[str, Field(description="Vendor identifier on the invoice")],
@@ -83,26 +92,31 @@ def register_prompts(mcp: FastMCP) -> None:
     ) -> list[AssistantMessage | UserMessage]:
         return [
             UserMessage(
-                f"Help me register invoice {invoice_number} for purchase order {purchase_order_id} and vendor {vendor_id}."
+                f"I need to register invoice {invoice_number} for purchase order {purchase_order_id} "
+                f"from vendor {vendor_id}, for the amount of {invoice_amount}."
             ),
             AssistantMessage(
-                "Check get_purchase_order first. The invoice path is valid only when the purchase order is at least SUBMITTED. "
-                "If goods have already arrived, include that context before asking to create the invoice."
+                f"Before I raise the invoice, I'll check the current state of purchase order {purchase_order_id}. "
+                "The invoice can only be created once the order has been submitted; if goods have already "
+                "been received I'll include that context so you have the full picture."
             ),
             AssistantMessage(
-                "Before create_invoice, restate vendor_id, purchase_order_id, invoice_number, invoice_amount, and idempotency_key. "
-                "After creation, keep invoice_id and credit_check_id in context so the next steps can use get_credit_check, "
-                "match_invoice, and approve_invoice."
+                f"Once the preconditions are satisfied, I'll confirm the full details — vendor {vendor_id}, "
+                f"order {purchase_order_id}, invoice {invoice_number}, amount {invoice_amount}, and an "
+                "idempotency key — and ask for your approval before registering the invoice. After that I'll "
+                "keep the invoice ID and credit check ID in context so we can progress through matching, "
+                "approval, and payment."
             ),
             AssistantMessage(
-                "If the user needs a concrete payload shape, read examples://p2p-api/create-invoice."
+                f"If you'd like to see what a typical invoice payload looks like, I can pull up an example "
+                f"from {URI_EXAMPLE_CREATE_INVOICE}."
             ),
         ]
 
     @mcp.prompt(
         name="resolve_blocked_p2p_action",
         title="Resolve Blocked P2P Action",
-        description="Explain a blocked or failed purchase-to-pay step and suggest the next valid move without auto-retrying.",
+        description="Explain a failed purchase-to-pay step in business terms and propose the next valid move without auto-retrying.",
     )
     def resolve_blocked_p2p_action(
         tool_name: Annotated[str, Field(description="Name of the tool that failed or was blocked")],
@@ -110,13 +124,19 @@ def register_prompts(mcp: FastMCP) -> None:
         message: Annotated[str, Field(description="Human-readable error message to explain")],
     ) -> list[AssistantMessage | UserMessage]:
         return [
-            UserMessage(f"A purchase-to-pay action failed in {tool_name} with {error_code}: {message}"),
-            AssistantMessage(
-                "Explain the business rule in plain language, do not retry automatically, and name the next valid tool or user decision."
+            UserMessage(
+                f"Something went wrong during a purchase-to-pay step. "
+                f"The '{tool_name}' action couldn't complete — it came back with '{error_code}': {message}"
             ),
             AssistantMessage(
-                "If the client needs the formal contract or a worked example, direct it to "
-                "contracts://p2p-api/mcp-server-tools and examples://p2p-api/full-p2p-workflow."
+                "That error means a business rule wasn't satisfied. Let me explain what happened in plain "
+                "terms and what needs to be true before we can move forward. I won't retry the same action "
+                "automatically — instead I'll tell you exactly what the next valid step is and let you "
+                "decide how to proceed."
+            ),
+            AssistantMessage(
+                "If you need the formal contract or a worked end-to-end example to understand the expected "
+                f"flow, I can pull those up from {URI_CONTRACT} or {URI_EXAMPLE_FULL_WORKFLOW}."
             ),
         ]
 

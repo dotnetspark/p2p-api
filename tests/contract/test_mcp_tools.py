@@ -98,7 +98,7 @@ async def test_mcp_tools_contract_lists_expected_tools():
         tools = await session.list_tools()
 
     tool_names = {tool.name for tool in tools.tools}
-    assert {
+    assert tool_names == {
         "get_vendor_eligibility",
         "get_vendor_exposure",
         "create_purchase_order",
@@ -110,7 +110,7 @@ async def test_mcp_tools_contract_lists_expected_tools():
         "approve_invoice",
         "pay_invoice",
         "get_credit_check",
-    }.issubset(tool_names)
+    }
 
     create_tool = next(tool for tool in tools.tools if tool.name == "create_purchase_order")
     assert create_tool.inputSchema["required"] == ["vendor_id", "line_items", "idempotency_key"]
@@ -123,34 +123,60 @@ async def test_mcp_contract_lists_expected_prompts_and_resources():
         resources = await session.list_resources()
 
     prompt_names = {prompt.name for prompt in prompts.prompts}
-    assert {
+    assert prompt_names == {
         "guided_purchase_to_pay",
         "prepare_purchase_order_with_confirmation",
         "prepare_invoice_with_preconditions",
         "resolve_blocked_p2p_action",
-    }.issubset(prompt_names)
+    }
 
     resource_uris = {str(resource.uri) for resource in resources.resources}
-    assert {
+    assert resource_uris == {
         "docs://p2p-api/mcp-e2e",
         "docs://p2p-api/mcp-quickstart",
         "contracts://p2p-api/mcp-server-tools",
         "examples://p2p-api/create-purchase-order",
         "examples://p2p-api/create-invoice",
         "examples://p2p-api/full-p2p-workflow",
-    }.issubset(resource_uris)
+    }
 
 
 @pytest.mark.anyio
-async def test_mcp_guided_purchase_to_pay_prompt_returns_workflow_and_hitl_constraints():
+async def test_mcp_tool_annotations_classify_read_and_mutating_tools():
+    async with mcp_client_session() as session:
+        tools = await session.list_tools()
+
+    tool_map = {tool.name: tool for tool in tools.tools}
+
+    for name in ("get_vendor_eligibility", "get_vendor_exposure", "get_purchase_order", "get_credit_check"):
+        assert tool_map[name].annotations is not None, f"{name} missing annotations"
+        assert tool_map[name].annotations.readOnlyHint is True, f"{name} should be read-only"
+
+    for name in ("create_purchase_order", "submit_purchase_order", "receive_purchase_order",
+                 "create_invoice", "match_invoice", "approve_invoice"):
+        ann = tool_map[name].annotations
+        assert ann is not None, f"{name} missing annotations"
+        assert ann.readOnlyHint is False, f"{name} should not be read-only"
+        assert ann.idempotentHint is True, f"{name} should be idempotent"
+
+    pay_ann = tool_map["pay_invoice"].annotations
+    assert pay_ann is not None
+    assert pay_ann.readOnlyHint is False
+    assert pay_ann.destructiveHint is True
+    assert pay_ann.idempotentHint is True
+
+
+@pytest.mark.anyio
+async def test_mcp_guided_purchase_to_pay_prompt_uses_natural_language_and_hitl_constraints():
     async with mcp_client_session() as session:
         prompt = await session.get_prompt("guided_purchase_to_pay", {"vendor_id": "V-100"})
 
     texts = _prompt_texts(prompt)
-    assert any("get_vendor_eligibility" in text for text in texts)
-    assert any("pay_invoice" in text for text in texts)
-    assert any("ask for confirmation" in text.lower() for text in texts)
-    assert any("contracts://p2p-api/mcp-server-tools" in text for text in texts)
+    combined = " ".join(texts).lower()
+    assert "vendor" in combined and "eligib" in combined
+    assert "payment" in combined or "pay" in combined
+    assert "confirmation" in combined or "confirm" in combined
+    assert "contracts://p2p-api/mcp-server-tools" in " ".join(texts)
 
 
 @pytest.mark.anyio

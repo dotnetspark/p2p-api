@@ -10,6 +10,7 @@ The format is based on Keep a Changelog.
 
 - Mounted an MCP server that exposes the purchase-to-pay workflow as agent-callable tools with structured success/error envelopes, idempotent mutation support, and end-to-end MCP contract/integration coverage [#39]
 - Added MCP prompts for guided HITL-safe workflows and resources for docs, examples, and the MCP contract so clients can discover more than tools alone [#39]
+- Rewrote MCP prompts to use natural-language conversation templates instead of tool-call scripts, added ToolAnnotations (readOnlyHint, destructiveHint, idempotentHint) on all tools, extracted URI and workflow-step constants to eliminate duplication, added safe file-read fallback in resources, and tightened contract tests to exact-set equality [#39]
 
 ### Fixed
 

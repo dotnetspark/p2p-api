@@ -5,17 +5,30 @@ from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
 
+from src.mcp.constants import (
+    URI_CONTRACT,
+    URI_DOCS_E2E,
+    URI_DOCS_QUICKSTART,
+    URI_EXAMPLE_CREATE_INVOICE,
+    URI_EXAMPLE_CREATE_PO,
+    URI_EXAMPLE_FULL_WORKFLOW,
+    WORKFLOW_STEPS,
+)
+
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _read_text(relative_path: str) -> str:
-    return (REPO_ROOT / relative_path).read_text(encoding="utf-8")
+    path = REPO_ROOT / relative_path
+    if not path.is_file():
+        return f"# Resource unavailable\n\nFile not found: {relative_path}"
+    return path.read_text(encoding="utf-8")
 
 
 def register_resources(mcp: FastMCP) -> None:
     @mcp.resource(
-        "docs://p2p-api/mcp-e2e",
+        URI_DOCS_E2E,
         name="mcp_e2e_guide",
         title="MCP E2E Guide",
         description="End-to-end setup, script execution, and manual test guidance for the mounted MCP server.",
@@ -25,7 +38,7 @@ def register_resources(mcp: FastMCP) -> None:
         return _read_text("docs/mcp-e2e.md")
 
     @mcp.resource(
-        "docs://p2p-api/mcp-quickstart",
+        URI_DOCS_QUICKSTART,
         name="mcp_quickstart",
         title="MCP Quickstart",
         description="Feature quickstart notes for the MCP server tools implementation.",
@@ -35,7 +48,7 @@ def register_resources(mcp: FastMCP) -> None:
         return _read_text("specs/020-mcp-server-tools/quickstart.md")
 
     @mcp.resource(
-        "contracts://p2p-api/mcp-server-tools",
+        URI_CONTRACT,
         name="mcp_server_tools_contract",
         title="MCP Server Tools Contract",
         description="Machine-readable contract for the MCP server tool surface.",
@@ -45,7 +58,7 @@ def register_resources(mcp: FastMCP) -> None:
         return _read_text("specs/020-mcp-server-tools/contracts/mcp-server-tools.yaml")
 
     @mcp.resource(
-        "examples://p2p-api/create-purchase-order",
+        URI_EXAMPLE_CREATE_PO,
         name="create_purchase_order_example",
         title="Create Purchase Order Example",
         description="Example payload for the create_purchase_order tool.",
@@ -74,7 +87,7 @@ def register_resources(mcp: FastMCP) -> None:
         )
 
     @mcp.resource(
-        "examples://p2p-api/create-invoice",
+        URI_EXAMPLE_CREATE_INVOICE,
         name="create_invoice_example",
         title="Create Invoice Example",
         description="Example payload for the create_invoice tool after purchase order submission.",
@@ -99,7 +112,7 @@ def register_resources(mcp: FastMCP) -> None:
         )
 
     @mcp.resource(
-        "examples://p2p-api/full-p2p-workflow",
+        URI_EXAMPLE_FULL_WORKFLOW,
         name="full_p2p_workflow_example",
         title="Full Purchase-To-Pay Workflow Example",
         description="Ordered example sequence showing how the published tools fit together.",
@@ -108,19 +121,7 @@ def register_resources(mcp: FastMCP) -> None:
     def full_p2p_workflow_example() -> str:
         return json.dumps(
             {
-                "workflow": [
-                    "get_vendor_eligibility",
-                    "get_vendor_exposure",
-                    "create_purchase_order",
-                    "get_purchase_order",
-                    "submit_purchase_order",
-                    "receive_purchase_order",
-                    "create_invoice",
-                    "get_credit_check",
-                    "match_invoice",
-                    "approve_invoice",
-                    "pay_invoice",
-                ],
+                "workflow": list(WORKFLOW_STEPS),
                 "notes": [
                     "Ask for confirmation before each mutating tool call.",
                     "Carry forward purchase_order_id, po_line_item_id, invoice_id, and credit_check_id.",
